@@ -1,0 +1,144 @@
+* Win conditions
+** minimal win conditions
+*** deactive engines
+    will have timeout before intercept
+*** destroy vessel
+    additional win conditions do not apply
+** additional option 1:
+*** deactivate shields (player escapes, ship destroyed)
+** additional option 2:
+*** deactivate weapons (player escapes, ship damaged)
+** additional option 3:
+*** deactivate both weapons and shields (player escapes, ships captured)
+** additional option 4:
+*** access escape pod (player escapees, ship destroyed)
+* Lose conditions
+** player dies/captured
+** timeout
+* Ship systems/control points
+** primary reactor
+*** detonate
+*** shutdown (can be reactivated)
+** life support computer
+*** vent/restore atmosphere on any deck
+** life support injector
+*** add gases to life support system
+** warp engine relays (2)
+*** deactivate/reactivate
+*** destroy
+** propulsion control computer
+*** deactive/reactive engines
+** weapons power relays (4-8)
+*** deactive/reactivate
+*** destroy
+** weapons control computer
+*** power down weapons
+*** initiate overload (destroys weapons if not deactivated)
+** shield control computer
+*** turn off shields (if in warp, destroys ship)
+** shield emitters (5-9)
+*** deactive/reactivate
+*** destroy
+** transporter control computer
+*** deactivate/reactivate
+*** initiate transport
+** bridge contains control relays for each computer above
+** some rooms have computer access terminals
+*** locked out, raises alarm
+* ship rooms and contents
+** bridge
+*** bridge computers
+*** enemy leader and officers and guards
+** crew quarter
+*** remote terminal
+*** food
+*** meds
+** mess hall
+*** food
+** infirmary
+*** healing devices
+*** medical dispensor
+** briefing rooms
+*** nothing in particular
+** brig
+*** nothing
+** reactor room
+*** reactor
+*** reactor control computer
+** life support
+*** life support computer
+*** life support injector
+** maintenance rooms, containing one of:
+*** warp relay
+*** weapons power relay
+*** shield emitter
+** propulsion control
+*** propulsion control computer
+** weapons control
+*** weapons control computer
+** shield control
+*** shield control computer
+*** 
+** transporter room
+*** transporter control computer
+** armoury
+*** weapons
+*** explosives
+*** armour
+** docking bay access
+*** rebreathers
+*** environment suits
+*** escape pod
+** storage rooms
+*** randomly placed containers
+** primary hallways
+*** run through centre of ship
+*** have turbolifts at set intervals
+** maintenance hallways
+*** run along outside hull
+*** accesses from primary hallways along room edges (but not all) (define?)
+*** provide access to:
+**** mess hall
+**** infirmary
+**** brig
+**** reactor room
+**** life support
+**** maintenance rooms
+**** all control rooms control
+**** docking bay
+**** storage rooms
+*** have own turbolifts
+* character
+** inventory
+*** 1 weapon slot
+*** 6 tools slots (includes explosives, meds, technical implements)
+** classes
+*** marine
+**** assault rifle
+**** combat armour
+**** recharge for maximum efficiency
+*** tech
+**** plasma pistol
+**** neural relays
+*** saboteur
+**** plasma pistol
+**** explosive charges
+* enemies
+** types
+*** (e)ngineer
+**** generally wander at random in rooms
+**** will investigate alarms
+**** will control terminals
+**** will detect sabotage and neural relays
+*** (s)oldier
+**** generally patrol halls and rooms
+*** (m)arine
+**** guard bridge
+**** respond to major alarms
+**** will detect sabotage
+*** (o)fficer
+**** on bridge
+**** will control terminals
+*** (l)eader
+**** on bridge
+**** will control terminals
