@@ -40,9 +40,8 @@ class MapBuilder
       processLevel l, roomDepth[l], levelLength[l], levelStart[l]
       
     end
-    @gameMap.map!{|l| l.map!{|y| if y.all?{|x| x.nil?} then nil else y end}}
     
-    return {:map => @gameMap, :rooms => @rooms}
+    return {:map => @gameMap, :rooms => @rooms, :width => @levelWidth}
   end
   
   private

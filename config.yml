@@ -1,6 +1,8 @@
 ---
 :mapSymbols:
+  :blank: ' '
   :floor: '.'
+  :lift: 'o'
   :wall: '#'
   :hatch: '='
   :hatch_open: '`'
