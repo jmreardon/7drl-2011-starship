@@ -5,7 +5,6 @@ require "bundler/setup"
 require "yaml"
 require "ncursesw"
 load "lib/GameState.rb"
-load "lib/random.rb"
 
 module Main
   def Main.start
