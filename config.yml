@@ -1,0 +1,9 @@
+---
+:mapSymbols:
+  :floor: '.'
+  :wall: '#'
+  :hatch: '='
+  :hatch_open: '`'
+  :door: '+'
+  :door_open: "'"
+  :player: '@'

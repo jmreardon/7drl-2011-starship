@@ -1,0 +1,4 @@
+KEY_UP: cmd_up
+KEY_DOWN: cmd_down
+KEY_RIGHT: cmd_right
+KEY_LEFT: cmd_left

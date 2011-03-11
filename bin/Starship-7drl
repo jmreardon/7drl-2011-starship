@@ -1,0 +1,4 @@
+#!/usr/bin/env ruby
+load "lib/Main.rb"
+
+Main::start
