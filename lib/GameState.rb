@@ -1,6 +1,7 @@
 require "yaml"
 
 load "lib/MapBuilder.rb"
+load "lib/Entity.rb"
 
 class GameState
   def initialize(rng)
@@ -9,7 +10,10 @@ class GameState
     @mapData = data[:map]
     @levelWidth = data[:width]
     @rooms = data[:rooms]
-    @objects = {:player => [0, find_floor(), @levelWidth/2]}
+    @player = Entity.new(:symbol => '@', :name => "You", :description => "The player")
+    @objects = Hash.new
+    @objects.compare_by_identity
+    @objects[@player] = [0, find_floor(), @levelWidth/2]
     @locObjects = @objects.invert
   end
   
@@ -17,8 +21,12 @@ class GameState
     {:levels => 8, :length => @mapData[0][@levelWidth/2].length, :width => @mapData[0].length}
   end
   
+  def player
+    return @player
+  end
+  
   def player_loc
-    return @objects[:player]
+    return @objects[@player]
   end
   
   def objects_at(*loc)

@@ -128,8 +128,17 @@ class MapBuilder
       carveRooms(level, [[midpoint+1,y1], [x2, y2]])
     else
       @gameMap[level][if bottom then y1-1 else y2+1 end][x1+(x2-x1)/2] = :door
+      carveRoom(level,x1,y1,x2,y2)
     end
     
+  end
+  
+  def carveRoom(level,x1,y1,x2,y2)
+    for x in x1..x2
+      for y in y1..y2
+       @gameMap[level][y][x] = :floor
+      end
+    end
   end
   
   def carveCrawlspace(level, x, y1, y2)

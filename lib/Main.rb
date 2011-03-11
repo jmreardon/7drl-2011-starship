@@ -43,7 +43,7 @@ module Main
         for y in 0...dims[:width]
           for x in 0...dims[:length]
             if(player == [l,x,y])
-              f.print(@config[:mapSymbols][:player])
+              f.print(@game.player.symbol)
             else 
               f.print(@config[:mapSymbols][@game.tile_at(l,x,y)])
             end
@@ -66,9 +66,6 @@ module Main
   
   def Main.load_game
     return false unless File.exists?("saved_game.dat")
-    Ncurses.stdscr.addstr("Saved game found, load? (Y/n)") # output string
-    result = Ncurses.stdscr.getch
-    return false if result == 'n'.ord
     File.open("saved_game.dat", "r") do |f|
       Marshal.load(f)
     end
