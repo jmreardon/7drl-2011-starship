@@ -50,6 +50,19 @@ class Display
     if(@colours)
       @window.color_set(0, nil)
     end
+    
+    #clear sidebar
+    (0..lines[0]).each do |sy|
+      @window.move(sy, map_width+1)
+      @window.clrtoeol
+    end
+    
+    #clear bottom
+    ((map_height)..lines[0]).each do |sy|
+      @window.move(sy, 0)
+      @window.clrtoeol
+    end
+    
     @window.move(map_height+1, 0)
     @window.clrtobot
     
@@ -58,10 +71,14 @@ class Display
       @window.mvaddstr(map_height, 0, msg)
     end
     
-    #clear sidebar
-    (0..lines[0]).each do |sy|
-      @window.move(sy, map_width+1)
-      @window.clrtoeol
+    if player.more_messages?
+      if(@colours)
+        @window.color_set(1, nil)
+      end
+      @window.mvaddstr(map_height, msg.length+1, "-more-")
+      if(@colours)
+        @window.color_set(0, nil)
+      end
     end
     
     #display sidebar
@@ -72,7 +89,7 @@ class Display
     @window.mvaddstr(2, side_start, "Objects #{game.object_count}")
     end_time = Time.now
     @window.mvaddstr(3, side_start, "Time #{((end_time - beginning_time)*1000).round} milliseconds")
-   
+    return player.more_messages?
   ensure
     Ncurses.refresh
   end

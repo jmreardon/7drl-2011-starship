@@ -3,6 +3,7 @@ require "yaml"
 load "lib/MapBuilder.rb"
 load "lib/Entity.rb"
 load "lib/Player.rb"
+load "lib/EnemyAI.rb"
 load "lib/PermissiveFieldOfView.rb"
 
 class GameState
@@ -14,6 +15,7 @@ class GameState
   def initialize(rng, config)
     @rng = rng
     @config = config
+    @ai = EnemyAI.new(@rng)
     data = MapBuilder.new.constructMap(rng, @config[:room_templates], @config[:objects])
     @mapData = data[:map]
     @level_width = data[:width]
@@ -97,11 +99,38 @@ class GameState
     when :cmd_lift_down
       move mob, -1, 0, 0
     when :cmd_open
-      open mob
+      if opts[:dir] then open mob, opts[:dir] else :direction end
     when :cmd_close
-      close mob
+      if opts[:dir] then close mob, opts[:dir] else :direction end
+    when :cmd_activate
+      if opts[:dir] then activate mob, opts[:dir] else :direction end
+    when :cmd_login
+      login mob, opts[:who]
     else 
       mob << "I don't know about action #{action}"
+    end
+  end
+  
+  def cmd_to_direction(cmd)
+    case cmd
+    when :cmd_up
+      [0, 0, -1]
+    when :cmd_down
+      [0, 0, 1]
+    when :cmd_left
+      [0, -1, 0]
+    when :cmd_right
+      [0, 1, 0]
+    when :cmd_up_left
+      [0, -1, -1]
+    when :cmd_up_right
+      [0, 1, -1]
+    when :cmd_down_left
+      [0, -1, 1]
+    when :cmd_down_right
+      [0, 1, 1]
+    else
+      false
     end
   end
   
@@ -111,7 +140,7 @@ class GameState
       return "The lift does not go there" if tile_at(loc) != :lift
       return "Lift in use" if !objects_at(loc).empty?
     end
-    return "Something is here" if !objects_at(loc).empty? 
+    return "A #{objects_at(loc).first[0].name} is here" if !objects_at(loc).empty? 
     return @config[:untraversable][tile_at(loc)]
   end
   
@@ -182,19 +211,6 @@ class GameState
     return [loc[0]+l,loc[1]+x,loc[2]+y]
   end
   
-  def open_close(mob, to_use, nothing_msg, changed_door, changed_hatch)
-    mob_loc = @objects[mob]
-    targets = AROUND.map{|l,x,y| offset(mob_loc,l,x,y)}.select{|loc| to_use.include?(tile_at(loc))}
-    if targets.size == 0
-      mob << nothing_msg
-    elsif targets.size > 1
-      mob << "There are more doors here than the programmer anticipated, not sure which to use"
-    else
-      loc = targets.first
-      @mapData[loc[0]][loc[2]][loc[1]] = if tile_at(loc) == to_use.first then changed_door else changed_hatch end
-    end
-  end
-  
   # for initial player placement
   def find_floor()
     floor = 0
@@ -208,12 +224,22 @@ class GameState
   
   #mob action definitions
   
-  def close(mob)
-    open_close(mob, [:door_open, :hatch_open], "There is nothing to close here", :door, :hatch)
+  def close(mob, dir)
+    open_close(mob, dir, [:door_open, :hatch_open], "There is nothing to close there", :door, :hatch)
   end
   
-  def open(mob)
-    open_close(mob, [:door, :hatch], "There is nothing to open here", :door_open, :hatch_open)
+  def open(mob, dir)
+    open_close(mob, dir, [:door, :hatch], "There is nothing to open there", :door_open, :hatch_open)
+  end
+
+  def open_close(mob, dir, to_use, nothing_msg, changed_door, changed_hatch)
+    mob_loc = @objects[mob]
+    loc = offset mob_loc, *dir
+    if to_use.include?(tile_at(loc))
+      @mapData[loc[0]][loc[2]][loc[1]] = if tile_at(loc) == to_use.first then changed_door else changed_hatch end
+    else
+      mob << nothing_msg
+    end
   end
   
   def move(mob, l, x, y)
@@ -225,6 +251,9 @@ class GameState
     mob_loc = @objects[mob]
     next_loc = offset mob_loc, l, x, y
     
+    #check for interactions besides moving later
+    
+    
     traversable_msg = traversable?(mob, mob_loc, next_loc)
     unless traversable_msg.nil?
       mob << traversable_msg
@@ -235,6 +264,23 @@ class GameState
     @locObjects[next_loc] = Hash.new if @locObjects[next_loc].nil?
     @locObjects[next_loc][mob] = true
     @objects[mob] = next_loc
+  end
+
+  def login(mob, controller)
+    controller << "Attempting to log in..." << "Lockout in effect. This access has been reported to security.".upcase
+    @ai << [:intruder, @objects[mob]]
+  end
+  
+  def activate(mob, dir)
+    mob_loc = @objects[mob]
+    target_loc = offset mob_loc, *dir
+  
+    target = @locObjects[target_loc].find{ |x,t| x.action }
+    if target
+      act target[0], target[0].action, :who => mob
+    else
+      mob << "There is nothing to active there"
+    end
   end
   
 end

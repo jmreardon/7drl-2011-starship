@@ -3,7 +3,7 @@ require "algorithms"
 include Containers
 
 class Entity
-  attr_reader :description, :name, :symbol, :mobile, :kind, :actions
+  attr_reader :description, :name, :symbol, :mobile, :kind, :action
   
   def initialize(template)
     @description = template[:description] || (fail "No description for this entity: #{template}")
@@ -11,11 +11,12 @@ class Entity
     @symbol = template[:symbol] || (fail "No symbol for this entity: #{template}")
     @mobile = template[:mobile] || false
     @kind = template[:kind] || (fail "No kind for this entity: #{template}")
-    @actions = template[:actions] || []
+    @action = template[:action]
     @pending_messages = []
   end
   
   def <<(message, time=0)
     @pending_messages << [time, message]
+    self
   end
 end

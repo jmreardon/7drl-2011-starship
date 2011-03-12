@@ -57,6 +57,7 @@ class MapBuilder
       # TODO this should be using the rng
       levels = spec[:levels].shuffle
       levels.find do |l|
+        fail "#{name}: #{spec}" if l > 7
         candidates = @rooms[l].select{|k,v| specs_match? v, spec}
         unless candidates.empty?
           processRoom l, *candidates.to_a.shuffle.first, name, spec

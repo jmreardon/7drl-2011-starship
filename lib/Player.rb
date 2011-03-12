@@ -27,11 +27,15 @@ class Player < Entity
     end
   end
   
+  def more_messages?
+    !@pending_messages[0].nil?
+  end
+  
   def last_msg
-    if @pending_messages[-1].nil?
+    if @pending_messages[0].nil?
       ""
     else 
-      @old_msgs << @pending_messages.pop
+      @old_msgs << @pending_messages.shift
       @old_msgs[-1][1]
     end
   end

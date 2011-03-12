@@ -1,7 +1,3 @@
-
-require "rubygems"
-require "bundler/setup"
-
 require "yaml"
 require "ncursesw"
 load "lib/GameState.rb"
@@ -14,7 +10,6 @@ module Main
     Ncurses.cbreak           # provide unbuffered input
     Ncurses.noecho           # turn off input echoing
     Ncurses.nonl             # turn off newline translation
-    Ncurses.stdscr.intrflush(false) # turn off flush-on-interrupt
     Ncurses.stdscr.keypad(true)
     Ncurses.curs_set(0)
     colours = false
@@ -30,36 +25,50 @@ module Main
       Ncurses.init_pair(1, Ncurses::COLOR_GREEN, bg);
       Ncurses.init_pair(2, Ncurses::COLOR_YELLOW, bg);
       Ncurses.init_pair(3, Ncurses::COLOR_BLUE, bg);
+      Ncurses.init_pair(3, Ncurses::COLOR_RED, bg);
       colours = true
     end
     #attempt to load saved game
     @game = load_game() || new_game()
  
-    dsp = Display.new(colours)
-    dsp.window = Ncurses.stdscr
+    @dsp = Display.new(colours)
+    @dsp.window = Ncurses.stdscr
+    
+    action_result = :no_action
     begin
-      dsp.show(@game) 
-    end while process_input(Ncurses.stdscr.getch)
+      messages = @dsp.show(@game) 
+      if messages
+        Ncurses.stdscr.getch
+        action_result = :no_action
+      else 
+        action_result = process_input(Ncurses.stdscr.getch)
+      end
+    end while action_result
     
     File.open("saved_game.dat", "w") do |f|
       Marshal.dump(@game, f)
     end
-    
+  rescue Interrupt
+    #do nothing
   ensure
-    Ncurses.echo
-    Ncurses.nocbreak
-    Ncurses.nl
-    Ncurses.endwin
+    end_curses
   end
     
     
 
   private
   
+  def Main.end_curses
+    Ncurses.echo
+    Ncurses.nocbreak
+    Ncurses.nl
+    Ncurses.endwin
+  end
+  
   def Main.process_input(char)
     case char
     when Ncurses::KEY_RESIZE
-      return true
+      return :no_action
     end
     action = @keyBindings[char]
     case action
@@ -68,9 +77,35 @@ module Main
     when :quit
       return false
     else 
-      @game.act(@game.player, action)
+      result = @game.act(@game.player, action)
+      case result
+      when :direction
+        dir = get_direction
+        if dir
+          @game.act(@game.player, action, :dir => dir)
+        else 
+          return :no_action
+        end
+      when :target
+        return :no_action
+      when false
+        return :no_action
+      end
     end
-    return true
+    return :action
+  end
+  
+  def Main.get_direction
+    @game.player << "Direction? "
+    begin
+      @dsp.show(@game)
+      action = @keyBindings[Ncurses.stdscr.getch]
+      
+      return false if action == :cmd_esc
+      dir = @game.cmd_to_direction(action)
+      return dir if dir
+      @game.player << "Direction? (use the direction keys)"
+    end while true
   end
   
   def Main.new_game
@@ -86,6 +121,9 @@ module Main
   end
 
   def Main.init
+    Signal.trap("TERM") do
+      end_curses
+    end
     #load keybindings
     fail "Cannot load configuration file (config.yml)" unless File.exists?("config.yml")
     @config = YAML.load_file("config.yml")
@@ -95,7 +133,7 @@ module Main
     YAML.load_file("keybindings.yml").each do |key,action|
       if key.respond_to?(:length) && key.length == 1
       key = key.ord
-      elsif Ncurses.const_defined?(key.to_sym)
+      elsif key.class != Fixnum && Ncurses.const_defined?(key.to_sym)
         key = Ncurses.const_get(key.to_sym)
       elsif key.class != Fixnum
         fail "Invalid key: #{key} used to bind #{action}"
@@ -104,5 +142,6 @@ module Main
     end
   rescue RuntimeError => e  
     puts e.message
+    fail e
   end
 end

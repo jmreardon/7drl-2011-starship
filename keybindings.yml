@@ -6,8 +6,10 @@ y: cmd_up_left
 u: cmd_up_right
 b: cmd_down_left
 n: cmd_down_right
+a: cmd_activate
 '>': cmd_lift_up
 '<': cmd_lift_down
 'o': cmd_open
 'c': cmd_close
 Q: quit
+27: cmd_esc
