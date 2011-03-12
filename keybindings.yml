@@ -2,4 +2,8 @@ KEY_UP: cmd_up
 KEY_DOWN: cmd_down
 KEY_RIGHT: cmd_right
 KEY_LEFT: cmd_left
+'>': cmd_lift_up
+'<': cmd_lift_down
+'o': cmd_open
+'c': cmd_close
 Q: quit

@@ -41,7 +41,7 @@ class MapBuilder
       
     end
     
-    return {:map => @gameMap, :rooms => @rooms, :width => @levelWidth}
+    return {:map => @gameMap, :rooms => @rooms, :width => @levelWidth, :length => levelLength.zip(levelStart).map{ |x,y| x + y }.max + 35}
   end
   
   private

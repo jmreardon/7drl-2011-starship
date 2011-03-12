@@ -109,13 +109,13 @@ module PermissiveFieldOfView
         # The real quadrant co-ordinates:
         real_x, real_y = x * dx, y * dy
         coord = [@start_x + real_x, @start_y + real_y]
+        # Don't go beyond circular radius specified
+        if (real_x**2 + real_y.abs**2) >= @radius_sq
+            active_views.delete_at(view_index)
+            return
+        end
         light *coord
         
-        # Don't go beyond circular radius specified
-        #if (real_x * real_x + real_y * real_y) > @radius_sq
-        #    active_views.delete_at(view_index)
-        #    return
-        #end
         
         # If this co-ord does not block sight, it has no effect on the view
         return unless blocked?(*coord)
