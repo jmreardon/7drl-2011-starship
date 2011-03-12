@@ -1,18 +1,19 @@
 require "algorithms"
 
-include Comtainers
+include Containers
 
 class Entity
-  attr_reader :description, :name, :symbol
+  attr_reader :description, :name, :symbol, :mobile
   
   def initialize(template)
     @description = template[:description]
     @name = template[:name]
     @symbol = template[:symbol]
-    @pending_messages = Heap.new
+    @mobile = template[:mobile] || false
+    @pending_messages = []
   end
   
   def <<(message, time=0)
-    @pending_messages.push(time, message)
+    @pending_messages << [time, message]
   end
 end

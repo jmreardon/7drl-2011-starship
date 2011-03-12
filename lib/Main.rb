@@ -5,6 +5,7 @@ require "bundler/setup"
 require "yaml"
 require "ncursesw"
 load "lib/GameState.rb"
+load "lib/Display.rb"
 
 module Main
   def Main.start
@@ -16,6 +17,7 @@ module Main
       Ncurses.nonl             # turn off newline translation
       Ncurses.stdscr.intrflush(false) # turn off flush-on-interrupt
       Ncurses.stdscr.keypad(true)
+      Ncurses.curs_set(0)
       
       #attempt to load saved game
       @game = load_game() || new_game()
@@ -23,7 +25,11 @@ module Main
         Marshal.dump(@game, f)
       end
 
-      result = Ncurses.stdscr.getch
+      dsp = Display.new
+      dsp.window = Ncurses.stdscr
+      begin
+        dsp.show(@game) 
+      end while process_input(Ncurses.stdscr.getch)
 
     ensure
       Ncurses.echo
@@ -41,11 +47,7 @@ module Main
         f.puts "Level #{i}"
         for y in 0...dims[:width]
           for x in 0...dims[:length]
-            if(player == [l,x,y])
-              f.print(@game.player.symbol)
-            else 
-              f.print(@config[:mapSymbols][@game.tile_at(l,x,y)])
-            end
+            f.print(@game.symbol_at(l,x,y))
           end
           f.puts ""
         end  
@@ -58,9 +60,22 @@ module Main
 
   private
   
+  def Main.process_input(char)
+    action = @keyBindings[char]
+    case action
+    when nil
+      @game.player << "Unbound key #{char}"
+    when :quit
+      return false
+    else 
+      @game.act(@game.player, action)
+    end
+    return true
+  end
+  
   def Main.new_game
     Ncurses.stdscr.addstr("Generating new game")
-    return GameState.new(Random.new)
+    return GameState.new(Random.new, @config)
   end
   
   def Main.load_game
@@ -80,9 +95,9 @@ module Main
     YAML.load_file("keybindings.yml").each do |key,action|
       if Ncurses.const_defined?(key.to_sym)
         key = Ncurses.const_get(key.to_sym)
-      elsif key.length == 1
+      elsif key.respond_to?(:length) && key.length == 1
         key = key.ord
-      else
+      elsif key.class != Fixnum
         fail "Invalid key: #{key} used to bind #{action}"
       end
       @keyBindings[key] = action.to_sym

@@ -9,3 +9,12 @@
   :door: '+'
   :door_open: "'"
   :player: '@'
+:traversable:
+  - :floor
+  - :lift
+  - :hatch_open
+  - :door_open
+:untraversable:
+  :wall: "There is a bulkhead here"
+  :hatch: "You'll have to open this hatch first"
+  :door: "You'll have to open this door first"
