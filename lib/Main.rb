@@ -17,11 +17,25 @@ module Main
     Ncurses.stdscr.intrflush(false) # turn off flush-on-interrupt
     Ncurses.stdscr.keypad(true)
     Ncurses.curs_set(0)
-    
+    colours = false
+    if Ncurses.has_colors?
+      bg = Ncurses::COLOR_BLACK
+      Ncurses.start_color
+      if (Ncurses.respond_to?("use_default_colors"))
+        if (Ncurses.use_default_colors == Ncurses::OK)
+          bg = -1
+        end
+      end
+      Ncurses.init_pair(0, Ncurses::COLOR_WHITE, bg);
+      Ncurses.init_pair(1, Ncurses::COLOR_GREEN, bg);
+      Ncurses.init_pair(2, Ncurses::COLOR_YELLOW, bg);
+      Ncurses.init_pair(3, Ncurses::COLOR_BLUE, bg);
+      colours = true
+    end
     #attempt to load saved game
     @game = load_game() || new_game()
  
-    dsp = Display.new
+    dsp = Display.new(colours)
     dsp.window = Ncurses.stdscr
     begin
       dsp.show(@game) 

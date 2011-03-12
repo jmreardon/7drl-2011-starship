@@ -1,7 +1,11 @@
-KEY_UP: cmd_up
-KEY_DOWN: cmd_down
-KEY_RIGHT: cmd_right
-KEY_LEFT: cmd_left
+k: cmd_up
+j: cmd_down
+l: cmd_right
+h: cmd_left
+y: cmd_up_left
+u: cmd_up_right
+b: cmd_down_left
+n: cmd_down_right
 '>': cmd_lift_up
 '<': cmd_lift_down
 'o': cmd_open

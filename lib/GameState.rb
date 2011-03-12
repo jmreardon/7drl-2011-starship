@@ -10,26 +10,43 @@ class GameState
   
   AROUND = [[0,1,0],[0,-1,0],[0,0,1],[0,0,-1]]
   attr_writer :config
+  attr_reader :rooms, :level_width
   def initialize(rng, config)
     @rng = rng
     @config = config
-    data = MapBuilder.new.constructMap(rng)
+    data = MapBuilder.new.constructMap(rng, @config[:room_templates], @config[:objects])
     @mapData = data[:map]
-    @levelWidth = data[:width]
+    @level_width = data[:width]
     @height = data[:width]
     @width = data[:length]
     @rooms = data[:rooms]
     @player_seen = Hash.new(false)
-    @player = Player.new(:symbol => '@', :name => "You", :mobile => true, :description => "The player")
+    @player = Player.new(:symbol => ['@', 1], :name => "You", :kind => :player, :mobile => true, :description => "The player")
     @objects = Hash.new
     @objects.compare_by_identity
-    @objects[@player] = [0, find_floor(), @levelWidth/2]
+    @objects[@player] = [0, find_floor(), @level_width/2]
+    data[:objects].each do |obj, loc|
+      @objects[obj] = loc
+    end
     @locObjects = Hash.new
     @objects.each do |k,v|
       if @locObjects[v].nil?
         @locObjects[v] = Hash.new
       end
       @locObjects[v][k] = true
+    end
+  end
+  
+  def object_count 
+    @objects.size
+  end
+  
+  def room_for(l, x, y)
+    room = @rooms[l].find{|k,v| k[0]<=x && k[1]<=y && k[2] >=x && k[3] >= y}
+    if room
+      room[1]
+    else 
+      nil
     end
   end
   
@@ -49,7 +66,7 @@ class GameState
   def light(x, y)
     @fov_visible[[@fov_level, x, y]] = true
     if @fov_player
-      @player_seen[[@fov_level,x,y]] = true
+      @player_seen[[@fov_level,x,y]] = tile_at(@fov_level,x,y)
     end
   end
   
@@ -67,6 +84,14 @@ class GameState
       move mob, 0, -1, 0
     when :cmd_right
       move mob, 0, 1, 0
+    when :cmd_up_left
+      move mob, 0, -1, -1
+    when :cmd_up_right
+      move mob, 0, 1, -1
+    when :cmd_down_left
+      move mob, 0, -1, 1
+    when :cmd_down_right
+      move mob, 0, 1, 1
     when :cmd_lift_up
       move mob, 1, 0, 0
     when :cmd_lift_down
@@ -91,7 +116,7 @@ class GameState
   end
   
   def map_dimensions
-    {:levels => 8, :length => @mapData[0][@levelWidth/2].length, :width => @mapData[0].length}
+    {:levels => 8, :length => @mapData[0][@level_width/2].length, :width => @mapData[0].length}
   end
   
   def player
@@ -104,15 +129,15 @@ class GameState
   end
   
   def symbol_for(thing)
-    @config[:mapSymbols][thing]
+    @config[:mapSymbols][thing] || [nil, 0]
   end
   
   def symbol_at(*loc)
     objs = objects_at loc
     if !objs.nil? and objs.size > 0
-      objs.first.first.symbol
+      objs.first.first.symbol || [nil, 0]
     else
-      @config[:mapSymbols][tile_at(loc)]
+      @config[:mapSymbols][tile_at(loc)] || [nil, 0]
     end
   end
   

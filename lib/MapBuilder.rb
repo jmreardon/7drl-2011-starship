@@ -1,13 +1,16 @@
 
 class MapBuilder
+  SURROUNDING = [[0,1,0],[0,-1,0],[0,0,1],[0,0,-1],[0,1,1],[0,-1,-1],[0,-1,1],[0,1,-1]]
   
-  def constructMap(rng)
+  def constructMap(rng, roomTemplates, objectTemplates)
     @rng = rng
+    @objects = []
+    @objectTemplates = objectTemplates
     maxRoomDepth = 8 + rng.rand(2)
-    roomDepth = [0,0,0,maxRoomDepth,0,0,0,0]
-    levelLength = [0,0,0,200+5*rng.rand(10),0,0,0,0]
-    levelStart = [0,0,0,-(levelLength[3]/2),0,0,0,0]
-    for i in [4,5,6,7,2,1,0]
+    roomDepth = [0,0,0,0,maxRoomDepth,0,0,0]
+    levelLength = [0,0,0,0,200+5*rng.rand(10),0,0,0]
+    levelStart = [0,0,0,0-(levelLength[3]/2),0,0,0]
+    for i in [3,5,6,7,2,1,0]
       roomDepth[i] = [3, roomDepth[nextToMiddle i] - 1 - rand(2)].max
       levelLength[i] = [60, levelLength[nextToMiddle i] - 5 * rand(10)].max
       
@@ -20,7 +23,7 @@ class MapBuilder
     minStart = levelStart.min - 35
     levelStart = levelStart.map { |s| s - minStart }
     
-    @turboliftLocs = ((levelStart[3]+5)...(levelLength[3]-5)).step(80).to_a
+    @turboliftLocs = ((levelStart[3]+5)...(levelLength[3]-5)).step(60).to_a
     diff = (levelLength[3] - @turboliftLocs[-1])/2
     @turboliftLocs.map!{|x| x + diff}
     
@@ -33,7 +36,7 @@ class MapBuilder
     end
     
     @rooms = Array.new(8) do |x|
-      Array.new()
+      Hash.new()
     end
     
     for l in 0..7
@@ -41,10 +44,99 @@ class MapBuilder
       
     end
     
-    return {:map => @gameMap, :rooms => @rooms, :width => @levelWidth, :length => levelLength.zip(levelStart).map{ |x,y| x + y }.max + 35}
+    processRooms roomTemplates
+    return {:map => @gameMap, :objects => @objects, :rooms => @rooms, :width => @levelWidth, :length => levelLength.zip(levelStart).map{ |x,y| x + y }.max + 35}
   end
   
   private
+  
+  def processRooms(roomTemplates)
+    random, counted = roomTemplates.partition{ |k,v| v[:count] < 1}
+    #work out the specific rooms
+    counted.each do |name, spec|
+      # TODO this should be using the rng
+      levels = spec[:levels].shuffle
+      levels.find do |l|
+        candidates = @rooms[l].select{|k,v| specs_match? v, spec}
+        unless candidates.empty?
+          processRoom l, *candidates.to_a.shuffle.first, name, spec
+          true
+        else
+          false
+        end
+      end
+    end
+    
+    #place the rest
+    (0...8).each do |l|
+      templatesLevel = random.select{ |name,spec| spec[:levels].include?(l) }
+      fail "No templates for level #{l}" if templatesLevel.empty?
+      @rooms[l].select{|l,d| d[:name].nil?}.each do |loc, data|
+        templates = templatesLevel.select{|kname,spec| specs_match? data, spec}
+        fail "no templates for room #{loc}, #{data}" if templates.empty?
+        odds = templates.map{|t| [t[1][:count], t]}.inject([[0, nil]]){ |memo,obj| memo.push([memo[-1][0]+obj[0], obj[1]])}
+        value = @rng.rand(odds.last.first)
+        target = odds.find{ |v,t| value < v}
+        processRoom l, loc, data, *target[1]
+      end
+    end
+  end
+  
+  def processRoom(level, roomLoc, roomData, name, spec)
+    roomData[:name] = name
+    if spec[:crawl]
+      insertCrawlAccess level, ((roomLoc[0]+roomLoc[2])/2), roomLoc[1], roomLoc[3]
+    end
+    candidates = Hash[(roomLoc[0]..roomLoc[2]).to_a.product((roomLoc[1]..roomLoc[3]).to_a).map{ |x| [x, true] }]
+    if spec[:objects]
+      (spec[:objects]).each do |chance, kind|
+        candidates.delete(placeObject kind, level, candidates) if @rng.rand(1.0) < chance
+      end
+    end
+  end
+  
+  def placeObject(kind, level, candidates)
+    obj = Entity.new(@objectTemplates[kind])
+    locs = candidates.to_a
+    case obj.kind
+    when :construct
+      locs = locs.select{ |x,t| walls_at(level, x) > 2 && doors_at(level, x) == 0}
+    end
+    return nil if locs.size == 0
+    
+    target = locs[@rng.rand(locs.size)]
+    fail "Target was nil" if target.nil?
+    @objects << [obj, [level, target[0][0], target[0][1]]]
+  end
+
+  def walls_at(level, loc)
+    SURROUNDING.map{|l,x,y| offset([level].concat(loc),l,x,y)}.map{ |l,x,y| if @gameMap[l][y][x] == :wall then 1 else 0 end}.reduce(:+)
+  end
+  
+  def doors_at(level, loc)
+    SURROUNDING.map{|l,x,y| offset([level].concat(loc),l,x,y)}.map{ |l,x,y| if [:door, :hatch].include?(@gameMap[l][y][x]) then 1 else 0 end}.reduce(:+)
+  end
+
+  def offset(loc, l, x, y)
+    return [loc[0]+l,loc[1]+x,loc[2]+y]
+  end
+  
+  def insertCrawlAccess(level, x, y1, y2)
+    mid = @levelWidth/2
+    return if y1 == mid+1 || y2 == mid-1
+    if y1 > mid && y2 > mid
+      @gameMap[level][y2+1][x] = :hatch
+    elsif y1 < mid && y2 < mid
+      @gameMap[level][y1-1][x] = :hatch
+    end
+    #otherwise we have an end room, and we don't care
+  end
+  
+  def specs_match?(candidate, spec)
+    return false if candidate.has_key? :name
+    return true unless spec[:prereqs]
+    spec[:prereqs].all?{ |k,v| candidate[k] == v}
+  end
   
   def processLevel(level, roomDepth, levelLength, levelStart)
     # construct hallway and skeletal walls
@@ -139,6 +231,17 @@ class MapBuilder
        @gameMap[level][y][x] = :floor
       end
     end
+    roomSpec = Hash.new
+    size = ((x1-x2+1)*(y1-y2+1)).abs
+    if size >= 60
+      roomSpec[:large] = true
+    elsif size >= 25
+      roomSpec[:medium] = true
+    else
+      roomSpec[:small] = true
+    end
+    roomSpec[:number] = @rooms[level].size+1
+    @rooms[level][[x1,y1,x2,y2]] = roomSpec
   end
   
   def carveCrawlspace(level, x, y1, y2)
@@ -152,8 +255,8 @@ class MapBuilder
   
   def endSection(level, levelStart, levelLength, roomDepth, startX, endX, doorX, flip)
     bowWidth = [5 + roomDepth + @rng.rand(roomDepth), 20].min
-    bowLength = 5 + bowWidth/2 + @rng.rand(bowWidth/2)
-    bowSplit = @rng.rand(2) == 1 && level != 3
+    bowLength = bowWidth/2 + @rng.rand(bowWidth/2)
+    bowSplit = @rng.rand(2) == 1 && level != 4
     if flip
       startX-=bowLength
     else
@@ -177,12 +280,30 @@ class MapBuilder
     for i in (if bowSplit then [@levelWidth/2-1, @levelWidth/2+1] else [@levelWidth/2] end)
       @gameMap[level][i][doorX] = :door
     end
+    
+    roomSpec = Hash.new
+    size = if bowSplit
+      bowWidth*bowLength/2-bowLength
+    else 
+      bowWidth*bowLength
+    end
+    size = size.abs
+    
+    if size >= 60
+      roomSpec[:large] = true
+    elsif size >= 30
+      roomSpec[:medium] = true
+    else
+      roomSpec[:small] = true
+    end
+    roomSpec[:number] = @rooms[level].size+1
 
     if bowSplit
-      @rooms[level] << [[startX+(if flip then 1 else 0 end), @levelWidth/2 - bowWidth/2+1],[endX-(if flip then 0 else 1 end),@levelWidth/2-1]]
-      @rooms[level] << [[startX+(if flip then 1 else 0 end), @levelWidth/2 + 1],[endX-(if flip then 0 else 1 end),@levelWidth/2 + bowWidth/2-1]]
+      @rooms[level][[startX+(if flip then 1 else 0 end), @levelWidth/2 - bowWidth/2+1,endX-(if flip then 0 else 1 end),@levelWidth/2-1]] = roomSpec.merge({:end => true})
+      @rooms[level][[startX+(if flip then 1 else 0 end), @levelWidth/2 + 1,endX-(if flip then 0 else 1 end),@levelWidth/2 + bowWidth/2-1]] = roomSpec.merge({:end => true})
     else
-      @rooms[level] << [[startX+(if flip then 1 else 0 end), @levelWidth/2 - bowWidth/2+1],[endX-(if flip then 0 else 1 end),@levelWidth/2 + bowWidth/2-1]]
+      roomData = if level == 4 && !flip then {:bridge => true} else {:end => true} end
+      @rooms[level][[startX+(if flip then 1 else 0 end), @levelWidth/2 - bowWidth/2+1,endX-(if flip then 0 else 1 end),@levelWidth/2 + bowWidth/2-1]] = roomSpec.merge(roomData)
     end
     
   end

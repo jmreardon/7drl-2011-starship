@@ -110,11 +110,9 @@ module PermissiveFieldOfView
         real_x, real_y = x * dx, y * dy
         coord = [@start_x + real_x, @start_y + real_y]
         # Don't go beyond circular radius specified
-        if (real_x**2 + real_y.abs**2) >= @radius_sq
-            active_views.delete_at(view_index)
-            return
+        if (real_x**2 + real_y**2) < @radius_sq
+          light *coord
         end
-        light *coord
         
         
         # If this co-ord does not block sight, it has no effect on the view

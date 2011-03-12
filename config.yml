@@ -1,20 +1,113 @@
 ---
 :mapSymbols:
-  :blank: ' '
-  :floor: '.'
-  :lift: 'o'
-  :wall: '#'
-  :hatch: '='
-  :hatch_open: '`'
-  :door: '+'
-  :door_open: "'"
-  :player: '@'
-:traversable:
-  - :floor
-  - :lift
-  - :hatch_open
-  - :door_open
+  :blank: [' ', 0]
+  :floor: ['.', 0]
+  :lift: ['o', 2]
+  :wall: ['#', 0]
+  :hatch: ['=', 1]
+  :hatch_open: ['`', 2]
+  :door: ['+', 2]
+  :door_open: ["'", 2]
 :untraversable:
   :wall: "There is a bulkhead here"
   :hatch: "You'll have to open this hatch first"
   :door: "You'll have to open this door first"
+:room_templates:
+  Bridge: 
+    :count: 1
+    :levels: [4]
+    :prereqs:
+      :bridge: true
+  Quarters:
+    :count: 0.8
+    :levels: [0,7,1,6]
+    :prereqs:
+      :small: true
+    :objects:
+      - - 0.4
+        - :charger
+      - - 1 
+        - :terminal
+  Mess Hall:
+    :count: 8
+    :levels: [0,7,1,6,2,5]
+    :crawl: true
+  Recreation:
+    :count: 4
+    :levels: [0,7,1,6]
+    :crawl: true
+    :prereqs:
+      :medium: true
+  Infirmary:
+    :count: 1
+    :levels: [3,4,5]
+    :crawl: true
+  Briefing Room:
+    :count: 10
+    :levels: [2,3,4,5,6]
+    :crawl: true
+  Brig:
+    :count: 1
+    :levels: [4,5]
+  Reactor:
+    :count: 1
+    :prereqs:
+      :end: true
+    :levels: [3,5]
+  Lift Support:
+    :count: 1
+    :levels: [2,3,4,5]
+    :crawl: true
+  Maintenance:
+    :count: 0.1
+    :levels: [0,1,2,3,4,5,6,7]
+    :crawl: true
+  Propulsion Control:
+    :count: 1
+    :levels: [2,3,4,5]
+    :crawl: true
+  Weapons Control:
+    :count: 1
+    :levels: [2,3,4,5]
+    :crawl: true
+  Shield Control:
+    :count: 1
+    :levels: [2,3,4,5]
+    :crawl: true
+  Transporter:
+    :count: 2
+    :prereqs:
+      :end: true
+    :levels: [2,3,4,5,6]
+  Armoury:
+    :count: 6
+    :levels: [2,3,4,5,6]
+    :crawl: true
+  Docking Bay Access:
+    :count: 1
+    :prereqs:
+      :end: true
+    :levels: [2,3,4,5,6]
+  Storage:
+    :count: 0.3
+    :levels: [0,1,2,3,4,5,6,7]
+    :crawl: true
+object_templates:
+  - construct: &construct
+      :kind: :construct
+      :symbol: ['?', 3]
+      :name: "This construct is unnamed"
+      :description: "This construct has no description"
+:objects:
+  :terminal:
+    <<: *construct
+    :name: "Terminal"
+    :description: "A standard computer terminal"
+    :actions:
+      - :cmd_login
+  :charger:
+    :name: "Charger Station"
+    :description: "Rapid recharging device"
+    <<: *construct
+    :actions:
+      - :cmd_charge
