@@ -88,7 +88,7 @@ class MapBuilder
     if spec[:crawl]
       insertCrawlAccess level, ((roomLoc[0]+roomLoc[2])/2), roomLoc[1], roomLoc[3]
     end
-    candidates = Hash[(roomLoc[0]..roomLoc[2]).to_a.product((roomLoc[1]..roomLoc[3]).to_a).map{ |x| [x, true] }]
+    candidates = Hash[(roomLoc[0]..roomLoc[2]).to_a.product((roomLoc[1]..roomLoc[3]).to_a).select{|x| doors_at(level, x) == 0 }.map{ |x| [x, true] }]
     if spec[:objects]
       (spec[:objects]).each do |chance, kind|
         candidates.delete(placeObject kind, level, candidates) if @rng.rand(1.0) < chance
@@ -97,11 +97,11 @@ class MapBuilder
   end
   
   def placeObject(kind, level, candidates)
-    obj = Entity.new(@objectTemplates[kind])
+    obj = Entity.new(@rng, @objectTemplates, @objectTemplates[kind])
     locs = candidates.to_a
     case obj.kind
     when :construct
-      locs = locs.select{ |x,t| walls_at(level, x) > 2 && doors_at(level, x) == 0}
+      locs = locs.select{ |x,t| walls_at(level, x) > 2 }
     end
     return nil if locs.size == 0
     

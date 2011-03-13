@@ -1,8 +1,8 @@
 module BresenhamLine
 
   def lineBetween(src, dest) 
-    fail "Coords on different levels" unless src[2] == dest[2]
-    return get_line(src[0],dest[0],src[1],dest[1],src[2])
+    fail "Coords on different levels" unless src[0] == dest[0]
+    return get_line(src[1],dest[1],src[2],dest[2],src[0])
   end
   
   private
@@ -32,9 +32,9 @@ module BresenhamLine
     end
     for x in x0..x1
       if steep
-        points << [y, x, level]
+        points << [level, y, x]
       else
-        points << [x, y, level]
+        points << [level, x, y]
       end
       error -= deltay
       if error < 0

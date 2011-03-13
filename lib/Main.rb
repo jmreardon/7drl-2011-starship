@@ -2,8 +2,10 @@ require "yaml"
 require "ncursesw"
 load "lib/GameState.rb"
 load "lib/Display.rb"
+load "lib/Offset.rb"
 
 module Main
+  
   def Main.start
     init()
     Ncurses.initscr
@@ -24,8 +26,9 @@ module Main
       Ncurses.init_pair(0, Ncurses::COLOR_WHITE, bg);
       Ncurses.init_pair(1, Ncurses::COLOR_GREEN, bg);
       Ncurses.init_pair(2, Ncurses::COLOR_YELLOW, bg);
-      Ncurses.init_pair(3, Ncurses::COLOR_BLUE, bg);
-      Ncurses.init_pair(3, Ncurses::COLOR_RED, bg);
+      Ncurses.init_pair(3, Ncurses::COLOR_MAGENTA, bg);
+      Ncurses.init_pair(4, Ncurses::COLOR_RED, bg);
+      Ncurses.init_pair(5, Ncurses::COLOR_CYAN, bg);
       colours = true
     end
     #attempt to load saved game
@@ -36,7 +39,11 @@ module Main
     
     action_result = :no_action
     begin
+      if action_result != :no_action
+        @game.process
+      end
       messages = @dsp.show(@game) 
+      #show multiple lines of messages
       if messages
         Ncurses.stdscr.getch
         action_result = :no_action
@@ -74,6 +81,7 @@ module Main
     case action
     when nil
       @game.player << "Unbound key #{char}"
+      return :no_action
     when :quit
       return false
     else 
@@ -87,7 +95,12 @@ module Main
           return :no_action
         end
       when :target
-        return :no_action
+        target = get_target
+        if target
+          @game.act(@game.player, action, :target => target)
+        else 
+          return :no_action
+        end
       when false
         return :no_action
       end
@@ -107,9 +120,33 @@ module Main
       @game.player << "Direction? (use the direction keys)"
     end while true
   end
+
+  def Main.get_target
+    player = @game.player
+    player << "Use the direction keys to select a target"
+    loc = @game.loc_for(player.last_target)
+    if loc == nil || !player.see?(*loc)
+      loc = @game.player_loc
+    end
+    begin
+      @dsp.mark(loc)
+      @dsp.show(@game)
+      action = @keyBindings[Ncurses.stdscr.getch]
+ 
+      return false if action == :cmd_esc
+      return loc if action == :cmd_enter
+      dir = @game.cmd_to_direction(action)
+      if dir && player.see?(*Offset.offset(loc, *dir))
+        loc = Offset.offset loc, *dir
+      elsif dir.nil?
+        player << "Use the direction keys to select a target"
+      elsif
+        @game.player << "You can't see there"
+      end
+    end while true
+  end
   
   def Main.new_game
-    Ncurses.stdscr.addstr("Generating new game")
     return GameState.new(Random.new, @config)
   end
   

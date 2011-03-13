@@ -9,6 +9,10 @@ class Display
   def initialize(colours)
     @colours = colours
   end
+  
+  def mark(loc)
+    @mark = loc
+  end
     
   def show(game)
     beginning_time = Time.now
@@ -40,10 +44,13 @@ class Display
           fail tile unless colour
           @window.color_set(colour, nil)
         end
-        if tile != ' '
-          blank_row = false
+        if [player_loc[0], gx, gy] == @mark
+          Ncurses::attrset(Ncurses::A_REVERSE)
         end
         @window.mvaddstr(sy,sx, tile)
+        if [player_loc[0], gx, gy] == @mark
+          Ncurses::attroff(Ncurses::A_REVERSE)
+        end
       end
     end
     
@@ -86,11 +93,24 @@ class Display
     @window.mvaddstr(0, side_start, "Deck #{player_loc[0]+1}")
     room = game.room_for(*player_loc)
     @window.mvaddstr(1, side_start, "Room #{room[:number]} - #{room[:name]}") if room
-    @window.mvaddstr(2, side_start, "Objects #{game.object_count}")
+    
+    @window.mvaddstr(6, side_start, "Weapon: ")
+    if(player.weapon)
+      @window.mvaddstr(6, side_start + 8, "#{sprintf("%3d", player.weapon.charge)}/#{player.weapon.max_charge}")
+      @window.mvaddstr(7, side_start, player.weapon.info)
+    else
+      @window.mvaddstr(6, side_start + 8, "None")
+    end
+    
+    @window.mvaddstr(map_height-1, side_start, sprintf("Distance to border:  %2dly", (game.distance/1000).round))
+    @window.mvaddstr(map_height, side_start, sprintf("Distance of pursuit: %2dly", ((game.capture_distance-game.distance)/1000).round))
+    
+    @window.mvaddstr(19, side_start, "Objects #{game.object_count}")
     end_time = Time.now
-    @window.mvaddstr(3, side_start, "Time #{((end_time - beginning_time)*1000).round} milliseconds")
+    @window.mvaddstr(20, side_start, "Time #{((end_time - beginning_time)*1000).round} milliseconds")
     return player.more_messages?
   ensure
+    @mark = nil
     Ncurses.refresh
   end
   

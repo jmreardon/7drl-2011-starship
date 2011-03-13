@@ -11,11 +11,15 @@ class GameState
   
   AROUND = [[0,1,0],[0,-1,0],[0,0,1],[0,0,-1]]
   attr_writer :config
-  attr_reader :rooms, :level_width
+  attr_reader :rooms, :level_width, :distance, :capture_distance, :warp_status, :turn
   def initialize(rng, config)
+    @turn = 0
+    @distance = 85000
+    @capture_distance = 90000
+    @warp_status = 1.0
     @rng = rng
     @config = config
-    @ai = EnemyAI.new(@rng)
+    @ai = EnemyAI.new(rng, @config[:objects])
     data = MapBuilder.new.constructMap(rng, @config[:room_templates], @config[:objects])
     @mapData = data[:map]
     @level_width = data[:width]
@@ -23,11 +27,12 @@ class GameState
     @width = data[:length]
     @rooms = data[:rooms]
     @player_seen = Hash.new(false)
-    @player = Player.new(:symbol => ['@', 1], :name => "You", :kind => :player, :mobile => true, :description => "The player")
+    @player = Player.new(@rng, @config[:objects], @config[:objects][:player_marine])
     @objects = Hash.new
     @objects.compare_by_identity
     @objects[@player] = [0, find_floor(), @level_width/2]
     data[:objects].each do |obj, loc|
+      next if @objects[@player] == loc
       @objects[obj] = loc
     end
     @locObjects = Hash.new
@@ -37,6 +42,15 @@ class GameState
       end
       @locObjects[v][k] = true
     end
+  end
+  
+  def process
+    @ai.process self, @rng
+    @objects.each do |o,loc|
+      o.process self, @rng
+    end
+    @distance -= @warp_status * 10
+    @capture_distance -= 7
   end
   
   def object_count 
@@ -98,6 +112,12 @@ class GameState
       move mob, 1, 0, 0
     when :cmd_lift_down
       move mob, -1, 0, 0
+    when :cmd_shoot 
+     if mob.weapon.nil?
+       mob << "You need a weapon to fire"
+       :no_action
+     end
+      if opts[:target] then shoot mob, opts[:target] else :target end
     when :cmd_open
       if opts[:dir] then open mob, opts[:dir] else :direction end
     when :cmd_close
@@ -140,7 +160,7 @@ class GameState
       return "The lift does not go there" if tile_at(loc) != :lift
       return "Lift in use" if !objects_at(loc).empty?
     end
-    return "A #{objects_at(loc).first[0].name} is here" if !objects_at(loc).empty? 
+    return "A #{objects_at(loc).first[0].name} is here" if !objects_at(loc).select{ |x,t| ![:item, :decor].include?(x.kind) }.empty? 
     return @config[:untraversable][tile_at(loc)]
   end
   
@@ -157,6 +177,10 @@ class GameState
     return @objects[@player]
   end
   
+  def loc_for(obj)
+    return @objects[obj]
+  end
+  
   def symbol_for(thing)
     @config[:mapSymbols][thing] || [nil, 0]
   end
@@ -164,9 +188,24 @@ class GameState
   def symbol_at(*loc)
     objs = objects_at loc
     if !objs.nil? and objs.size > 0
-      objs.first.first.symbol || [nil, 0]
+      objs.sort_by{|x| obj_visibility x}.first.first.symbol || [nil, 0]
     else
       @config[:mapSymbols][tile_at(loc)] || [nil, 0]
+    end
+  end
+  
+  def obj_visibility(x)
+    case x.first.kind
+    when :creature
+      0
+    when :construct
+      1
+    when :item
+      2
+    when :decor
+      3
+    else
+      4
     end
   end
   
@@ -242,6 +281,72 @@ class GameState
     end
   end
   
+  def shoot(mob, loc)
+    target = @locObjects[loc] && @locObjects[loc].find{ |x,t| ![:item, :decor].include?(x.kind) }
+    if target
+      return true unless check_weapon(mob, mob.weapon)
+      target = target[0]
+      mob.last_target = target
+      hit target, mob.weapon, mob
+    else
+      mob << "Nothing there to shoot"
+      :no_action
+    end
+  end
+  
+  def check_weapon(mob, weapon)
+    if weapon.charge == 0
+      mob << "Hrm, no charge"
+      return false
+    else
+      weapon.charge-=1
+      return true
+    end
+  end
+  
+  def hit(target, weapon, shooter)
+    damage = @rng.rand(weapon.dam[0]..weapon.dam[1])
+    target.health -= damage
+    if target.health <= 0
+      kill target
+      shooter << "You #{killed target} the #{target.name}"
+    else 
+      shooter << "You #{damage_msg target, damage, target.max_health} the #{target.name}"
+    end
+  end
+  
+  def kill(target)
+    loc = @objects[target]
+    @locObjects[@objects[target]].delete(target)
+    @objects.delete(target)
+    if target.kill_template
+      object = Entity.new(@rng, @config[:objects], @config[:objects][target.kill_template])
+      @objects[object] = loc
+      place_mob(loc, object)
+    end
+  end
+  
+  def killed(target)
+    if target.kind == :creature
+      "kill"
+    else 
+      "destroy"
+    end
+  end
+  
+  def damage_msg(target, dam, max)
+    percent = dam/max.to_f
+    if percent < 0.05
+      "graze"
+    elsif percent < 0.2
+      if target.kind == :creature then "hurt" else "damage" end
+    elsif percent < 0.5
+      "blast"
+    else
+      if target.kind == :creature then "cripple" else "wreck" end
+    end
+  end
+  
   def move(mob, l, x, y)
     unless mob.mobile
       mob << "You are not mobile, you cannot move"
@@ -261,9 +366,13 @@ class GameState
     end
     
     @locObjects[mob_loc].delete(mob)
-    @locObjects[next_loc] = Hash.new if @locObjects[next_loc].nil?
-    @locObjects[next_loc][mob] = true
+    place_mob(next_loc, mob)
     @objects[mob] = next_loc
+  end
+  
+  def place_mob(loc, mob)
+    @locObjects[loc] = Hash.new if @locObjects[loc].nil?
+    @locObjects[loc][mob] = true
   end
 
   def login(mob, controller)

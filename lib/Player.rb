@@ -2,9 +2,14 @@ load "lib/Entity.rb"
 
 class Player < Entity
   attr_reader :old_msgs
-  def initialize(template)
-    super(template)
+  def initialize(rng, templates, template)
+    super(rng, templates, template)
     @old_msgs = []
+    @last_target = self
+  end
+  
+  def see?(l, x, y)
+    return !!@fov[[l,x,y]]
   end
   
   def look(game)

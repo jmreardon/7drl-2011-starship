@@ -18,64 +18,120 @@
     :levels: [4]
     :prereqs:
       :bridge: true
+    :objects:  
+      - [1, :crewer]
+      - [1, :crewer]
+      - [1, :crewer]
+      - [1, :crewer]
   Quarters:
     :count: 0.8
     :levels: [0, 7, 1, 6]
     :prereqs:
       :small: true
     :objects:
-      - - 0.4
-        - :charger
-      - - 1 
-        - :terminal
+      - [0.4, :charger]
+      - [1, :terminal]
+      - [0.1, :crewer]
   Mess Hall:
     :count: 8
     :levels: [0, 7, 1, 6, 2, 5]
     :crawl: true
+    :objects:  
+      - [0.5, :crewer]
+      - [0.5, :crewer]
+      - [0.5, :crewer]
   Recreation:
     :count: 4
     :levels: [0, 7, 1, 6]
     :crawl: true
+    :objects:  
+      - [0.5, :crewer]
+      - [0.5, :crewer]
+      - [0.5, :crewer]
     :prereqs:
       :medium: true
   Infirmary:
     :count: 1
     :levels: [3, 4, 5]
     :crawl: true
+    :prereqs:
+      :medium: true
+    :objects:  
+      - [0.5, :crewer]
+      - [0.5, :crewer]
   Briefing Room:
     :count: 10
     :levels: [2, 3, 4, 5, 6]
     :crawl: true
+    :prereqs:
+      :medium: true
+    :objects:  
+      - [0.5, :crewer]
+      - [0.5, :crewer]
+      - [0.5, :crewer]
+      - [0.5, :crewer]
   Brig:
     :count: 1
     :levels: [4, 5]
+    :objects:  
+      - [0.5, :crewer]
+      - [0.5, :crewer]
+      - [0.5, :crewer]
   Reactor:
     :count: 1
     :prereqs:
       :end: true
-    :levels: [3, 5]
+    :levels: [3, 5]  
+    :objects:  
+      - [0.5, :crewer]
+      - [0.5, :crewer]
+      - [0.5, :crewer]
   Lift Support:
     :count: 1
     :levels: [2, 3, 4, 5]
     :crawl: true
+    :objects:  
+      - [0.5, :crewer]
+      - [0.5, :crewer]
+      - [0.5, :crewer]
+    :prereqs:
+      :medium: true
   Maintenance:
     :count: 0.1
     :levels: [0, 1, 2, 3, 4, 5, 6, 7]
     :crawl: true
+    :objects:  
+      - [0.1, :crewer]
   Propulsion Control:
     :count: 1
     :levels: [2, 3, 4, 5]
     :crawl: true
+    :objects:  
+      - [0.5, :crewer]
+      - [0.5, :crewer]
+      - [0.5, :crewer]
   Weapons Control:
     :count: 1
     :levels: [2, 3, 4, 5]
     :crawl: true
+    :objects:  
+      - [0.5, :crewer]
+      - [0.5, :crewer]
+      - [0.5, :crewer]
   Shield Control:
     :count: 1
     :levels: [2, 3, 4, 5]
     :crawl: true
+    :objects:  
+      - [0.5, :crewer]
+      - [0.5, :crewer]
+      - [0.5, :crewer]
   Transporter:
     :count: 2
+    :objects:  
+      - [0.5, :crewer]
+      - [0.5, :crewer]
+      - [0.5, :crewer]
     :prereqs:
       :end: true
     :levels: [2, 3, 4, 5, 6]
@@ -83,19 +139,51 @@
     :count: 6
     :levels: [2, 3, 4, 5, 6]
     :crawl: true
+    :objects:  
+      - [0.5, :crewer]
+      - [0.5, :crewer]
+    :prereqs:
+      :medium: true
   Docking Bay Access:
     :count: 1
+    :objects:  
+      - [0.5, :crewer]
+      - [0.5, :crewer]
+      - [0.5, :crewer]
     :prereqs:
       :end: true
     :levels: [2, 3, 4, 5, 6]
   Storage:
     :count: 0.3
+    :objects:  
+      - [0.01, :crewer]
     :levels: [0, 1, 2, 3, 4, 5, 6, 7]
     :crawl: true
-:objects:    
+templates:
   construct: &construct
     :kind: :construct
     :symbol: ['?', 3]
+    :kill_template: :wreckage
+  weapon: &weapon
+    :kind: :item
+    :symbol: ['/', 1]
+    :capabilities: [:weapon]
+  creature: &creature
+    :kind: :creature
+    :weapon: [:plasma_pistol]
+    :mobile: true
+:objects:
+  :wreckage:
+    :symbol: ['%', 5]
+    :name: "Wreckage"
+    :kind: :decor
+    :description: "Unidentifiable wreckage"
+  :player_marine:
+    :symbol: ['@', 1]
+    :name: "You"
+    :description: "The player" 
+    <<: *creature
+    :weapon: [:plasma_rifle]
   :terminal:
     :name: "Terminal"
     :description: "A standard computer terminal"
@@ -106,3 +194,25 @@
     :description: "Rapid recharging device"
     :action: :cmd_charge
     <<: *construct
+  :crewer:
+    :name: "Crewer"
+    :description: "An enemy crewman"
+    :health: [3, 4]
+    :symbol: ['c', 4]
+    <<: *creature
+  :plasma_pistol:
+    :name: "Plasma Pistol"
+    :description: "Standard issue sidearm"
+    :dam: [2, 3]
+    :acc: 0.80
+    :acc_drop: 0.02
+    :charge: 50
+    <<: *weapon
+  :plasma_rifle:
+    :name: "Plasma Rifle"
+    :description: "The assault weapon of choice for the modern marine"
+    :dam: [4, 5]
+    :acc: 0.70
+    :acc_drop: 0.002
+    :charge: 30
+    <<: *weapon
