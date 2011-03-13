@@ -6,6 +6,7 @@ y: cmd_up_left
 u: cmd_up_right
 b: cmd_down_left
 n: cmd_down_right
+'.': cmd_rest
 a: cmd_activate
 s: cmd_shoot
 x: cmd_examine

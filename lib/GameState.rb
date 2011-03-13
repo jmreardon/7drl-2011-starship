@@ -13,7 +13,7 @@ class GameState
   include PermissiveFieldOfView
   
   attr_writer :config
-  attr_reader :rooms, :level_width, :distance, :capture_distance, :warp_status, :turn
+  attr_reader :rooms, :level_width, :distance, :capture_distance, :warp_status, :turn, :player_fov
   def initialize(rng, config)
     @turn = 0
     @distance = 85000
@@ -32,6 +32,7 @@ class GameState
     @width = data[:length]
     @rooms = data[:rooms]
     @player_seen = Hash.new(false)
+    @player_fov = Hash.new(false)
     @player = Player.new(@rng, @config[:objects], @config[:objects][:player_marine])
     @objects = Hash.new
     @objects.compare_by_identity
@@ -58,6 +59,10 @@ class GameState
     @distance -= @warp_status * 10
     @capture_distance -= 7
     @turn+=1
+  end
+  
+  def scent(loc, val)
+    @scent_map[loc] = val
   end
   
   def scents_at(loc)
@@ -89,6 +94,9 @@ class GameState
     @fov_player = mob == @player
     mob_loc = @objects[mob]
     do_fov(mob_loc[1], mob_loc[2], range)
+    if @fov_player
+      @player_fov = @fov_visible
+    end
     return @fov_visible
   end
   
@@ -105,6 +113,8 @@ class GameState
   
   def act(mob, action, opts = {})
     case action
+    when :cmd_rest
+      return :action
     when :cmd_up
       move mob, 0, 0, -1
     when :cmd_down
@@ -177,7 +187,7 @@ class GameState
     end
   end
   
-  def untraversable?(mob, curr, loc)
+  def untraversable?(curr, loc)
     if curr[0] != loc[0] 
       return "There is no lift here" if tile_at(curr) != :lift
       return "The lift does not go there" if tile_at(loc) != :lift
@@ -308,6 +318,7 @@ class GameState
       @mapData[loc[0]][loc[2]][loc[1]] = if tile_at(loc) == to_use.first then changed_door else changed_hatch end
     else
       mob << nothing_msg
+      :no_action
     end
   end
   
@@ -339,7 +350,7 @@ class GameState
       return hit(target[0], mob.weapon, mob)
     end
     
-    traversable_msg = untraversable?(mob, mob_loc, next_loc)
+    traversable_msg = untraversable?(mob_loc, next_loc)
     unless traversable_msg.nil?
       mob << traversable_msg
       return false

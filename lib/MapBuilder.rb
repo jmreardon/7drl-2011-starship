@@ -113,11 +113,14 @@ class MapBuilder
   end
 
   def walls_at(level, loc)
-    SURROUNDING.map{|l,x,y| Offset.offset([level].concat(loc),l,x,y)}.map{ |l,x,y| if @gameMap[l][y][x] == :wall then 1 else 0 end}.reduce(:+)
+    SURROUNDING.map{|l,x,y| Offset.offset([level].concat(loc),l,x,y)}.
+      map{ |l,x,y| if @gameMap[l] && @gameMap[l][y] && @gameMap[l][y][x] == :wall then 1 else 0 end}.reduce(:+)
   end
   
   def doors_at(level, loc)
-    SURROUNDING.map{|l,x,y| Offset.offset([level].concat(loc),l,x,y)}.map{ |l,x,y| if [:door, :hatch].include?(@gameMap[l][y][x]) then 1 else 0 end}.reduce(:+)
+    SURROUNDING.map{|l,x,y| Offset.offset([level].
+      concat(loc),l,x,y)}.
+      map{ |l,x,y| if @gameMap[l] && @gameMap[l][y] && [:door, :hatch].include?(@gameMap[l][y][x]) then 1 else 0 end}.reduce(:+)
   end
   
   def insertCrawlAccess(level, x, y1, y2)

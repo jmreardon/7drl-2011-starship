@@ -103,6 +103,8 @@
     :levels: [0, 1, 2, 3, 4, 5, 6, 7]
     :crawl: true
     :objects:  
+      - [0.5, :crewer]
+      - [0.5, :crewer]
       - [0.1, :crewer]
   Propulsion Control:
     :count: 1
@@ -158,6 +160,9 @@
   Storage:
     :count: 0.3
     :objects:  
+      - [0.8, :crewer]
+      - [0.5, :crewer]
+      - [0.1, :crewer]
       - [0.1, :crewer]
       - [1, :container]
       - [1, :container]

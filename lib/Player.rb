@@ -17,7 +17,7 @@ class Player < Entity
   end
   
   def show_tile(game, god, l, x, y)
-    if god || @fov[[l, x, y]]
+    if @fov[[l, x, y]] || god
       return game.symbol_at(l,x,y) 
     else 
       tile = game.player_seen?(l, x, y) 
