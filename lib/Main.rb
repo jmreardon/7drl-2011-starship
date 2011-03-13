@@ -109,7 +109,6 @@ module Main
   end
   
   def Main.get_direction
-    @game.player << "Direction? "
     begin
       @dsp.show(@game)
       action = @keyBindings[Ncurses.stdscr.getch]
@@ -123,26 +122,28 @@ module Main
 
   def Main.get_target
     player = @game.player
-    player << "Use the direction keys to select a target"
     loc = @game.loc_for(player.last_target)
     if loc == nil || !player.see?(*loc)
       loc = @game.player_loc
     end
+    dir = [0,0,0]
     begin
+      if dir && player.see?(*Offset.offset(loc, *dir))
+        loc = Offset.offset loc, *dir
+        player << @game.description_at(*loc)
+      elsif dir.nil? || !dir.kind_of?(Array)
+        player << "Use the direction keys to select a target"
+      elsif !player.see?(*Offset.offset(loc, *dir))
+        @game.player << "You can't see there"
+      end
+
       @dsp.mark(loc)
       @dsp.show(@game)
+      
       action = @keyBindings[Ncurses.stdscr.getch]
- 
       return false if action == :cmd_esc
       return loc if action == :cmd_enter
       dir = @game.cmd_to_direction(action)
-      if dir && player.see?(*Offset.offset(loc, *dir))
-        loc = Offset.offset loc, *dir
-      elsif dir.nil?
-        player << "Use the direction keys to select a target"
-      elsif
-        @game.player << "You can't see there"
-      end
     end while true
   end
   

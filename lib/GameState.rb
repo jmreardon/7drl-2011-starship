@@ -20,7 +20,10 @@ class GameState
     @rng = rng
     @config = config
     @ai = EnemyAI.new(rng, @config[:objects])
-    data = MapBuilder.new.constructMap(rng, @config[:room_templates], @config[:objects])
+    data = false
+    until data
+      data = MapBuilder.new.constructMap(rng, @config[:room_templates], @config[:objects])
+    end
     @mapData = data[:map]
     @level_width = data[:width]
     @height = data[:width]
@@ -30,7 +33,7 @@ class GameState
     @player = Player.new(@rng, @config[:objects], @config[:objects][:player_marine])
     @objects = Hash.new
     @objects.compare_by_identity
-    @objects[@player] = [0, find_floor(), @level_width/2]
+    @objects[@player] = [0, *find_floor()]
     data[:objects].each do |obj, loc|
       next if @objects[@player] == loc
       @objects[obj] = loc
@@ -51,6 +54,7 @@ class GameState
     end
     @distance -= @warp_status * 10
     @capture_distance -= 7
+    @turn+=1
   end
   
   def object_count 
@@ -118,6 +122,14 @@ class GameState
        :no_action
      end
       if opts[:target] then shoot mob, opts[:target] else :target end
+    when :cmd_examine
+      if opts[:target]
+        mob.last_target = @locObjects[opts[:target]] && !@locObjects[opts[:target]].empty? && @locObjects[opts[:target]].sort_by{|x| obj_visibility x}.first.first
+        mob << "#{mob.last_target.info}: #{mob.last_target.description}" if mob.last_target
+        :no_action 
+      else 
+        :target
+        end
     when :cmd_open
       if opts[:dir] then open mob, opts[:dir] else :direction end
     when :cmd_close
@@ -126,6 +138,8 @@ class GameState
       if opts[:dir] then activate mob, opts[:dir] else :direction end
     when :cmd_login
       login mob, opts[:who]
+    when :cmd_charge
+      charge mob, opts[:who]
     else 
       mob << "I don't know about action #{action}"
     end
@@ -165,7 +179,7 @@ class GameState
   end
   
   def map_dimensions
-    {:levels => 8, :length => @mapData[0][@level_width/2].length, :width => @mapData[0].length}
+    {:levels => 8, :length => @mapData[4][@level_width/2].length, :width => @mapData[4].length}
   end
   
   def player
@@ -185,12 +199,35 @@ class GameState
     @config[:mapSymbols][thing] || [nil, 0]
   end
   
+  def description_at(*loc)
+    objs = objects_at loc
+    if !objs.nil? && objs.size > 0
+      obj = objs.sort_by{|x| obj_visibility x}.first.first
+      obj.info
+    else
+      case tile_at(*loc)
+      when :floor
+        "The floor"
+      when :wall
+        "A wall"
+      when :door, :door_open
+        "A door"
+      when :hatch, :hatch_open
+        "A hatch"
+      when :lift
+        "A lift"
+      else
+        "Nothing of note here"
+      end
+    end
+  end
+  
   def symbol_at(*loc)
     objs = objects_at loc
-    if !objs.nil? and objs.size > 0
+    if !objs.nil? && objs.size > 0
       objs.sort_by{|x| obj_visibility x}.first.first.symbol || [nil, 0]
     else
-      @config[:mapSymbols][tile_at(loc)] || [nil, 0]
+      @config[:mapSymbols][tile_at(*loc)] || [nil, 0]
     end
   end
   
@@ -252,12 +289,17 @@ class GameState
   
   # for initial player placement
   def find_floor()
-    floor = 0
-    for x in 0..map_dimensions[:length]
-      floor = x
-      break if tile_at(0, x, map_dimensions[:width]/2) == :floor
+    fx = 0
+    fy = 0
+    for y in 0..map_dimensions[:width]
+      fy = y
+      for x in 0..map_dimensions[:length]
+        fx = x
+        break if tile_at(0, x, y) == :floor
+      end  
+      break if tile_at(0, x, y) == :floor
     end
-    return floor
+    return [fx, fy]
   end
   
   
@@ -299,13 +341,17 @@ class GameState
       mob << "Hrm, no charge"
       return false
     else
-      weapon.charge-=1
       return true
     end
   end
   
   def hit(target, weapon, shooter)
-    damage = @rng.rand(weapon.dam[0]..weapon.dam[1])
+    damage = if weapon.charge && weapon.charge > 0 
+      @rng.rand(weapon.dam[0]..weapon.dam[1])
+    else
+      @rng.rand(weapon.melee_dam) + shooter.strength
+    end
+    weapon.charge-=1 if weapon.charge
     target.health -= damage
     if target.health <= 0
       kill target
@@ -356,8 +402,11 @@ class GameState
     mob_loc = @objects[mob]
     next_loc = offset mob_loc, l, x, y
     
-    #check for interactions besides moving later
-    
+    #check for target to attack
+    objs = @locObjects[next_loc]
+    if objs && target = objs.find{ |x,t| x.kind == :creature }
+      return hit(target[0], mob.weapon, mob)
+    end
     
     traversable_msg = traversable?(mob, mob_loc, next_loc)
     unless traversable_msg.nil?
@@ -374,6 +423,31 @@ class GameState
     @locObjects[loc] = Hash.new if @locObjects[loc].nil?
     @locObjects[loc][mob] = true
   end
+  
+  def charge(mob, controller)
+    curr_charge = mob.charge
+    if curr_charge == 0
+      controller << "Power reserves depleted, please try again later".upcase
+      return :action
+    end
+    to_charge = controller.items.select{ |x| !x.charge.nil? }
+    if to_charge.empty?
+      controller << "You have nothing to charge"
+    elsif to_charge.all?{ |x| x.charge == x.max_charge }
+      controller << "Everything is already fully charged"
+    else
+      to_charge.each do |x|
+        curr_charge = x.add_charge curr_charge
+      end
+      mob.add_charge(curr_charge - mob.charge)
+      if to_charge.all?{ |x| x.charge == x.max_charge }
+        controller << "Everything is now fully charged"
+      else
+        controller << "You deplete the charger's power reserves"
+      end
+    end
+  end
+      
 
   def login(mob, controller)
     controller << "Attempting to log in..." << "Lockout in effect. This access has been reported to security.".upcase
@@ -384,7 +458,7 @@ class GameState
     mob_loc = @objects[mob]
     target_loc = offset mob_loc, *dir
   
-    target = @locObjects[target_loc].find{ |x,t| x.action }
+    target =  @locObjects[target_loc] && @locObjects[target_loc].find{ |x,t| x.action }
     if target
       act target[0], target[0].action, :who => mob
     else

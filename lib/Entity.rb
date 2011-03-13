@@ -30,12 +30,28 @@ class Entity
     @max_charge = @charge
     @capabilities = template[:capabilities] || []
     @pending_messages = []
+    @props = Hash.new
+  end
+  
+  def add_charge(add)
+    diff = [0, (@charge+add) - @max_charge].max
+    @charge = [0, [@max_charge, @charge+add].min].max
+    return diff
+  end
+  
+  def items
+    items = []
+    items << weapon unless weapon.nil?
+    items
   end
   
   def method_missing(id, *args)
-    raise NoMethodError if args.size > 0
-    return nil if !@template.has_key?(id)
-    return @template[id]
+    raise NoMethodError if args.size > 1
+    if args.size == 1 && id[-1] == "="
+      @props[id] = args[0]
+    elsif args.size == 0
+      @props[id] || @template[id]
+    end
   end
   
   def info
@@ -58,7 +74,14 @@ class Entity
   end
   
   def process(game, rng)
-    
+    capabilities.each { |x| process_capability game, rng, x }
+  end
+  
+  def process_capability(game, rng, capability)
+    case capability
+    when :self_charge
+      self.add_charge 1 if game.turn % 30 == 0
+    end
   end
   
   def <<(message, time=-1)

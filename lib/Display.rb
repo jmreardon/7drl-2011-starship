@@ -93,17 +93,19 @@ class Display
     @window.mvaddstr(0, side_start, "Deck #{player_loc[0]+1}")
     room = game.room_for(*player_loc)
     @window.mvaddstr(1, side_start, "Room #{room[:number]} - #{room[:name]}") if room
+      @window.mvaddstr(4, side_start, "Health: #{sprintf("%3d", player.health)}/#{player.max_health}")
     
     @window.mvaddstr(6, side_start, "Weapon: ")
     if(player.weapon)
-      @window.mvaddstr(6, side_start + 8, "#{sprintf("%3d", player.weapon.charge)}/#{player.weapon.max_charge}")
-      @window.mvaddstr(7, side_start, player.weapon.info)
+      @window.mvaddstr(8, side_start + 1, "Charge: #{sprintf("%3d", player.weapon.charge)}/#{player.weapon.max_charge}")
+      @window.mvaddstr(7, side_start + 1, player.weapon.info)
     else
-      @window.mvaddstr(6, side_start + 8, "None")
+      @window.mvaddstr(7, side_start + 1, "None")
     end
-    
-    @window.mvaddstr(map_height-1, side_start, sprintf("Distance to border:  %2dly", (game.distance/1000).round))
-    @window.mvaddstr(map_height, side_start, sprintf("Distance of pursuit: %2dly", ((game.capture_distance-game.distance)/1000).round))
+
+    @window.mvaddstr(map_height-2, side_start, sprintf("               Turn: %5d", game.turn))
+    @window.mvaddstr(map_height-1, side_start, sprintf(" Distance to border:  %2dly", (game.distance/1000).round))
+    @window.mvaddstr(map_height, side_start,   sprintf("Distance of pursuit:  %2dly", ((game.capture_distance-game.distance)/1000).round))
     
     @window.mvaddstr(19, side_start, "Objects #{game.object_count}")
     end_time = Time.now

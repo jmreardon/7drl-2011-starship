@@ -6,13 +6,13 @@ class MapBuilder
     @rng = rng
     @objects = []
     @objectTemplates = objectTemplates
-    maxRoomDepth = 8 + rng.rand(2)
+    maxRoomDepth = 7 + rng.rand(2)
     roomDepth = [0,0,0,0,maxRoomDepth,0,0,0]
-    levelLength = [0,0,0,0,200+5*rng.rand(10),0,0,0]
+    levelLength = [0,0,0,0,120+5*rng.rand(10),0,0,0]
     levelStart = [0,0,0,0-(levelLength[3]/2),0,0,0]
     for i in [3,5,6,7,2,1,0]
       roomDepth[i] = [3, roomDepth[nextToMiddle i] - 1 - rand(2)].max
-      levelLength[i] = [60, levelLength[nextToMiddle i] - 5 * rand(10)].max
+      levelLength[i] = [40, levelLength[nextToMiddle i] - 5 * rand(10)].max
       
       minLevelStart = levelStart[nextToMiddle i]
       maxLevelStart = minLevelStart + (levelLength[nextToMiddle i] - levelLength[i])
@@ -23,8 +23,8 @@ class MapBuilder
     minStart = levelStart.min - 35
     levelStart = levelStart.map { |s| s - minStart }
     
-    @turboliftLocs = ((levelStart[3]+5)...(levelLength[3]-5)).step(60).to_a
-    diff = (levelLength[3] - @turboliftLocs[-1])/2
+    @turboliftLocs = ((levelStart[4]+5)...(levelLength[4]-5)).step(30).to_a
+    diff = (levelLength[4] - @turboliftLocs[-1])/2
     @turboliftLocs.map!{|x| x + diff}
     
     @levelWidth = maxRoomDepth*2 + 5 + 2*3
@@ -39,10 +39,8 @@ class MapBuilder
       Hash.new()
     end
     
-    for l in 0..7
-      processLevel l, roomDepth[l], levelLength[l], levelStart[l]
-      
-    end
+    levelsSuccess = (0..7).all?{ |l| processLevel l, roomDepth[l], levelLength[l], levelStart[l] }
+    return false unless levelsSuccess
     
     processRooms roomTemplates
     return {:map => @gameMap, :objects => @objects, :rooms => @rooms, :width => @levelWidth, :length => levelLength.zip(levelStart).map{ |x,y| x + y }.max + 35}
@@ -99,15 +97,17 @@ class MapBuilder
   def placeObject(kind, level, candidates)
     obj = Entity.new(@rng, @objectTemplates, @objectTemplates[kind])
     locs = candidates.to_a
-    case obj.kind
-    when :construct
+    if obj.capabilities.include?(:against_wall)
       locs = locs.select{ |x,t| walls_at(level, x) > 2 }
+    elsif obj.capabilities.include?(:away_wall)
+      locs = locs.select{ |x,t| walls_at(level, x) == 0 }
     end
     return nil if locs.size == 0
     
     target = locs[@rng.rand(locs.size)]
     fail "Target was nil" if target.nil?
     @objects << [obj, [level, target[0][0], target[0][1]]]
+    target[0]
   end
 
   def walls_at(level, loc)
@@ -154,6 +154,7 @@ class MapBuilder
 
     exteriorLocs = [roomDepth+5, -(roomDepth+5)].map{ |x|@levelWidth/2 + x }
     levelLifts = @turboliftLocs.select{ |x| ((levelStart+5)..(levelStart + levelLength-5)).member?(x) }
+    return false if levelLifts.empty?
     levelLifts.each do |loc|
       @gameMap[level][@levelWidth/2 + 1][loc] = @gameMap[level][@levelWidth/2 - 1][loc] = :lift
       for i in [loc+1, loc+2, loc-1, loc-2]
@@ -193,6 +194,7 @@ class MapBuilder
     sections += sectionStartsX.zip(sectionEndsX).map{|x1,x2| [[x1, @levelWidth/2 - (roomDepth+2)],[x2, @levelWidth/2 - 3]]}
     sections += sectionStartsX.zip(sectionEndsX).map{|x1,x2| [[x1, @levelWidth/2 + 3],[x2, @levelWidth/2 + (roomDepth+2)]]}
     sections.each{|s| carveRooms(level, s)}
+    true
   end
   
   private
@@ -236,7 +238,7 @@ class MapBuilder
     size = ((x1-x2+1)*(y1-y2+1)).abs
     if size >= 60
       roomSpec[:large] = true
-    elsif size >= 25
+    elsif size >= 22
       roomSpec[:medium] = true
     else
       roomSpec[:small] = true
