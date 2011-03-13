@@ -219,6 +219,7 @@ templates:
     :description: "An enemy crewman"
     :health: [3, 4]
     :symbol: ['c', 4]
+    :capabilities: [:ai]
     <<: *creature
   :plasma_pistol:
     :name: "Plasma Pistol"

@@ -14,7 +14,7 @@ class Display
     @mark = loc
   end
     
-  def show(game)
+  def show(game, god = false)
     beginning_time = Time.now
     lines   = []
     columns = []
@@ -39,7 +39,7 @@ class Display
         next
       end
       (0..map_width).zip(map_x..(map_x+map_width)).each do |sx,gx|
-        tile, colour = player.show_tile(game, player_loc[0], gx, gy)
+        tile, colour = player.show_tile(game, god, player_loc[0], gx, gy)
         if(@colours)
           fail tile unless colour
           @window.color_set(colour, nil)

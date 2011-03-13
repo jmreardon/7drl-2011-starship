@@ -1,8 +1,8 @@
 require "yaml"
 require "ncursesw"
-load "lib/GameState.rb"
-load "lib/Display.rb"
-load "lib/Offset.rb"
+require_relative "GameState"
+require_relative "Display"
+require_relative "Offset"
 
 module Main
   
@@ -42,7 +42,7 @@ module Main
       if action_result != :no_action
         @game.process
       end
-      messages = @dsp.show(@game) 
+      messages = @dsp.show(@game, @god) 
       #show multiple lines of messages
       if messages
         Ncurses.stdscr.getch
@@ -84,6 +84,9 @@ module Main
       return :no_action
     when :quit
       return false
+    when :cmd_god
+      @god = !@god
+      return :no_action
     else 
       result = @game.act(@game.player, action)
       case result
@@ -162,6 +165,7 @@ module Main
     Signal.trap("TERM") do
       end_curses
     end
+    @god = false
     #load keybindings
     fail "Cannot load configuration file (config.yml)" unless File.exists?("config.yml")
     @config = YAML.load_file("config.yml")

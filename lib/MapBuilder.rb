@@ -1,6 +1,8 @@
+require_relative "Offset"
+
+include Offset
 
 class MapBuilder
-  SURROUNDING = [[0,1,0],[0,-1,0],[0,0,1],[0,0,-1],[0,1,1],[0,-1,-1],[0,-1,1],[0,1,-1]]
   
   def constructMap(rng, roomTemplates, objectTemplates)
     @rng = rng
@@ -111,15 +113,11 @@ class MapBuilder
   end
 
   def walls_at(level, loc)
-    SURROUNDING.map{|l,x,y| offset([level].concat(loc),l,x,y)}.map{ |l,x,y| if @gameMap[l][y][x] == :wall then 1 else 0 end}.reduce(:+)
+    SURROUNDING.map{|l,x,y| Offset.offset([level].concat(loc),l,x,y)}.map{ |l,x,y| if @gameMap[l][y][x] == :wall then 1 else 0 end}.reduce(:+)
   end
   
   def doors_at(level, loc)
-    SURROUNDING.map{|l,x,y| offset([level].concat(loc),l,x,y)}.map{ |l,x,y| if [:door, :hatch].include?(@gameMap[l][y][x]) then 1 else 0 end}.reduce(:+)
-  end
-
-  def offset(loc, l, x, y)
-    return [loc[0]+l,loc[1]+x,loc[2]+y]
+    SURROUNDING.map{|l,x,y| Offset.offset([level].concat(loc),l,x,y)}.map{ |l,x,y| if [:door, :hatch].include?(@gameMap[l][y][x]) then 1 else 0 end}.reduce(:+)
   end
   
   def insertCrawlAccess(level, x, y1, y2)

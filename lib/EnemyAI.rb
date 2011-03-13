@@ -1,4 +1,4 @@
-load "lib/Entity.rb"
+require_relative "Entity"
 
 class EnemyAI < Entity
   def initialize(rng, templates)

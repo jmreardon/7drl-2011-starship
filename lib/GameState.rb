@@ -1,15 +1,17 @@
 require "yaml"
 
-load "lib/MapBuilder.rb"
-load "lib/Entity.rb"
-load "lib/Player.rb"
-load "lib/EnemyAI.rb"
-load "lib/PermissiveFieldOfView.rb"
+require_relative "MapBuilder"
+require_relative "Entity"
+require_relative "Player"
+require_relative "EnemyAI"
+require_relative "Offset"
+require_relative "PermissiveFieldOfView"
+
+include Offset
 
 class GameState
   include PermissiveFieldOfView
   
-  AROUND = [[0,1,0],[0,-1,0],[0,0,1],[0,0,-1]]
   attr_writer :config
   attr_reader :rooms, :level_width, :distance, :capture_distance, :warp_status, :turn
   def initialize(rng, config)
@@ -34,6 +36,7 @@ class GameState
     @objects = Hash.new
     @objects.compare_by_identity
     @objects[@player] = [0, *find_floor()]
+    @scent_map = Hash.new(0)
     data[:objects].each do |obj, loc|
       next if @objects[@player] == loc
       @objects[obj] = loc
@@ -55,6 +58,12 @@ class GameState
     @distance -= @warp_status * 10
     @capture_distance -= 7
     @turn+=1
+  end
+  
+  def scents_at(loc)
+    (if tile_at(loc) == :lift then SURROUNDING_3D else SURROUNDING end).map{ |l,x,y| [[l,x,y], @scent_map[Offset.offset(loc, l, x, y)]] }.
+    select{ |loc,val| val >= @turn-30 }.
+    sort {|a,b| b[1] <=> a[1]} 
   end
   
   def object_count 
@@ -168,13 +177,14 @@ class GameState
     end
   end
   
-  def traversable?(mob, curr, loc)
+  def untraversable?(mob, curr, loc)
     if curr[0] != loc[0] 
       return "There is no lift here" if tile_at(curr) != :lift
       return "The lift does not go there" if tile_at(loc) != :lift
       return "Lift in use" if !objects_at(loc).empty?
     end
     return "A #{objects_at(loc).first[0].name} is here" if !objects_at(loc).select{ |x,t| ![:item, :decor].include?(x.kind) }.empty? 
+    # return the untraversable tile message, of course, if it is traversable, this is nil
     return @config[:untraversable][tile_at(loc)]
   end
   
@@ -281,28 +291,6 @@ class GameState
     end
   end
   
-  private
-  
-  def offset(loc, l, x, y)
-    return [loc[0]+l,loc[1]+x,loc[2]+y]
-  end
-  
-  # for initial player placement
-  def find_floor()
-    fx = 0
-    fy = 0
-    for y in 0..map_dimensions[:width]
-      fy = y
-      for x in 0..map_dimensions[:length]
-        fx = x
-        break if tile_at(0, x, y) == :floor
-      end  
-      break if tile_at(0, x, y) == :floor
-    end
-    return [fx, fy]
-  end
-  
-  
   #mob action definitions
   
   def close(mob, dir)
@@ -315,7 +303,7 @@ class GameState
 
   def open_close(mob, dir, to_use, nothing_msg, changed_door, changed_hatch)
     mob_loc = @objects[mob]
-    loc = offset mob_loc, *dir
+    loc = Offset.offset mob_loc, *dir
     if to_use.include?(tile_at(loc))
       @mapData[loc[0]][loc[2]][loc[1]] = if tile_at(loc) == to_use.first then changed_door else changed_hatch end
     else
@@ -334,6 +322,52 @@ class GameState
       mob << "Nothing there to shoot"
       :no_action
     end
+  end
+  
+  def move(mob, l, x, y)
+    unless mob.mobile
+      mob << "You are not mobile, you cannot move"
+      return false
+    end
+    
+    mob_loc = @objects[mob]
+    next_loc = Offset.offset mob_loc, l, x, y
+    
+    #check for target to attack
+    objs = @locObjects[next_loc]
+    if objs && target = objs.find{ |x,t| x.kind == :creature }
+      return hit(target[0], mob.weapon, mob)
+    end
+    
+    traversable_msg = untraversable?(mob, mob_loc, next_loc)
+    unless traversable_msg.nil?
+      mob << traversable_msg
+      return false
+    end
+    
+    if mob == @player
+      @scent_map[next_loc] = @turn
+    end
+    @locObjects[mob_loc].delete(mob)
+    place_mob(next_loc, mob)
+    @objects[mob] = next_loc
+  end
+  
+  private
+  
+  # for initial player placement
+  def find_floor()
+    fx = 0
+    fy = 0
+    for y in 0..map_dimensions[:width]
+      fy = y
+      for x in 0..map_dimensions[:length]
+        fx = x
+        break if tile_at(0, x, y) == :floor
+      end  
+      break if tile_at(0, x, y) == :floor
+    end
+    return [fx, fy]
   end
   
   def check_weapon(mob, weapon)
@@ -393,32 +427,6 @@ class GameState
     end
   end
   
-  def move(mob, l, x, y)
-    unless mob.mobile
-      mob << "You are not mobile, you cannot move"
-      return false
-    end
-    
-    mob_loc = @objects[mob]
-    next_loc = offset mob_loc, l, x, y
-    
-    #check for target to attack
-    objs = @locObjects[next_loc]
-    if objs && target = objs.find{ |x,t| x.kind == :creature }
-      return hit(target[0], mob.weapon, mob)
-    end
-    
-    traversable_msg = traversable?(mob, mob_loc, next_loc)
-    unless traversable_msg.nil?
-      mob << traversable_msg
-      return false
-    end
-    
-    @locObjects[mob_loc].delete(mob)
-    place_mob(next_loc, mob)
-    @objects[mob] = next_loc
-  end
-  
   def place_mob(loc, mob)
     @locObjects[loc] = Hash.new if @locObjects[loc].nil?
     @locObjects[loc][mob] = true
@@ -456,7 +464,7 @@ class GameState
   
   def activate(mob, dir)
     mob_loc = @objects[mob]
-    target_loc = offset mob_loc, *dir
+    target_loc = Offset.offset mob_loc, *dir
   
     target =  @locObjects[target_loc] && @locObjects[target_loc].find{ |x,t| x.action }
     if target

@@ -1,6 +1,4 @@
-require "algorithms"
-
-include Containers
+require_relative "Enemy"
 
 class Entity
   attr_reader :description, 
@@ -81,6 +79,8 @@ class Entity
     case capability
     when :self_charge
       self.add_charge 1 if game.turn % 30 == 0
+    when :ai
+      Enemy.process(game, rng, self)
     end
   end
   

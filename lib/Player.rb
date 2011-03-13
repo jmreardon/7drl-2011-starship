@@ -1,4 +1,4 @@
-load "lib/Entity.rb"
+require_relative "Entity"
 
 class Player < Entity
   attr_reader :old_msgs
@@ -16,8 +16,8 @@ class Player < Entity
     @fov = game.do_field_of_view(self, 20)
   end
   
-  def show_tile(game, l, x, y)
-    if @fov[[l, x, y]]
+  def show_tile(game, god, l, x, y)
+    if god || @fov[[l, x, y]]
       return game.symbol_at(l,x,y) 
     else 
       tile = game.player_seen?(l, x, y) 
