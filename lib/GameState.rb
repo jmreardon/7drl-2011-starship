@@ -13,19 +13,22 @@ class GameState
   include PermissiveFieldOfView
   
   attr_writer :config
-  attr_reader :rooms, :level_width, :distance, :capture_distance, :warp_status, :turn, :player_fov
+  attr_reader :rooms, :level_width, :distance, :capture_distance, :warp_status, :turn, :player_fov, :ai, :game_over
   def initialize(rng, config)
+    @game_over = nil
+    @shield_damage = 0
     @turn = 0
-    @distance = 85000
-    @capture_distance = 90000
+    @distance = 16000
+    @capture_distance = 9000
     @warp_status = 1.0
     @rng = rng
     @config = config
-    @ai = EnemyAI.new(rng, @config[:objects])
     data = false
     until data
-      data = MapBuilder.new.constructMap(rng, @config[:room_templates], @config[:objects])
+    @objects = Hash.new
+      data = MapBuilder.new.constructMap(self, rng, @config[:room_templates], @config[:objects])
     end
+    @ai = EnemyAI.new(self, rng, @config[:objects])
     @mapData = data[:map]
     @level_width = data[:width]
     @height = data[:width]
@@ -33,11 +36,9 @@ class GameState
     @rooms = data[:rooms]
     @player_seen = Hash.new(false)
     @player_fov = Hash.new(false)
-    @player = Player.new(@rng, @config[:objects], @config[:objects][:player_marine])
-    @objects = Hash.new
-    @objects.compare_by_identity
+    @player = Player.new(self, @rng, @config[:objects], @config[:objects][:player_marine])
     @objects[@player] = [0, *find_floor()]
-    @scent_map = Hash.new(0)
+    @scent_map = Hash.new(-1)
     data[:objects].each do |obj, loc|
       next if @objects[@player] == loc
       @objects[obj] = loc
@@ -51,23 +52,36 @@ class GameState
     end
   end
   
+  def add_item(obj)
+    @objects[obj] = nil
+  end
+  
   def process
+    @player.look self
     @ai.process self, @rng
     @objects.each do |o,loc|
+      break if @player.health == 0 || @game_over
       o.process self, @rng
     end
     @distance -= @warp_status * 10
     @capture_distance -= 7
     @turn+=1
+    if @distance < @capture_distance
+      @player << "Friendly vessels have intercepted the ship"
+      @game_over = @config[:ending][:capture]
+    end
+    if @player.health == 0 && !@game_over
+      @game_over = @config[:ending][:killed]
+    end
   end
   
-  def scent(loc, val)
-    @scent_map[loc] = val
+  def scent(loc, val, override = false)
+    @scent_map[loc] = if override then val else [@scent_map[loc], val].max end
   end
   
   def scents_at(loc)
     (if tile_at(loc) == :lift then SURROUNDING_3D else SURROUNDING end).map{ |l,x,y| [[l,x,y], @scent_map[Offset.offset(loc, l, x, y)]] }.
-    select{ |loc,val| val >= @turn-30 }.
+    select{ |loc,val| val >= [@turn-30, 0].max }.
     sort {|a,b| b[1] <=> a[1]} 
   end
   
@@ -112,9 +126,25 @@ class GameState
   end
   
   def act(mob, action, opts = {})
+    if (mob == @player && mob.health && mob.health == 0) || @game_over
+      if action == :cmd_examine
+        if opts[:target]
+          mob.last_target = @locObjects[opts[:target]] && !@locObjects[opts[:target]].empty? && @locObjects[opts[:target]].sort_by{|x| obj_visibility x}.first.first
+          mob << "#{mob.last_target.info}: #{mob.last_target.description}" if mob.last_target
+          return :no_action 
+        else 
+          return :target
+        end
+      else
+        mob << "The game is over, press the escape-action key to play again"
+        return :no_action
+      end
+    end
     case action
     when :cmd_rest
       return :action
+    when :cmd_equip
+      equip mob
     when :cmd_up
       move mob, 0, 0, -1
     when :cmd_down
@@ -159,6 +189,25 @@ class GameState
       login mob, opts[:who]
     when :cmd_charge
       charge mob, opts[:who]
+    when :destroy_ship
+      @game_over = if (@shield_damage < 3 || @warp_status == 0)
+        mob << "You have caused a reactor core breach"
+        @config[:ending][:core_breach]
+      else 
+        mob << "You have disabled the shields"
+        @config[:ending][:shield_failure]
+      end
+    when :warp_damage
+      mob << "Warp speed reduced"
+      @warp_status = [0, warp_status - 0.4].max
+    when :shield_damage
+      @shield_damage+=1
+      if @shield_damage > 2 && @warp_status > 0
+        act mob, :destroy_ship
+      end
+    when :leader_dead  
+        mob << "Seeing their commander die, the rebels surrender"
+      @game_over = @config[:ending][:leader_dead]
     else 
       mob << "I don't know about action #{action}"
     end
@@ -303,6 +352,30 @@ class GameState
   
   #mob action definitions
   
+  def equip(mob)
+    loc = @objects[mob]
+    target = @locObjects[loc] && @locObjects[loc].find{ |x,t| x.capabilities.include?(:armour) || x.capabilities.include?(:weapon)}
+    if target
+      item = target[0]
+      @locObjects[loc].delete(item)
+      old = nil
+      if item.capabilities.include?(:weapon)
+        old = mob.weapon
+        mob.weapon = item
+      else 
+        old = mob.armour
+        mob.armour = item
+      end
+      mob << "Equiped #{item.info}"
+      place_mob(loc, old)
+      @objects[item] = nil
+      :action
+    else
+      mob << "Nothing to pick up here"
+      :no_action
+    end
+  end
+  
   def close(mob, dir)
     open_close(mob, dir, [:door_open, :hatch_open], "There is nothing to close there", :door, :hatch)
   end
@@ -323,7 +396,7 @@ class GameState
   end
   
   def shoot(mob, loc)
-    target = @locObjects[loc] && @locObjects[loc].find{ |x,t| ![:item, :decor].include?(x.kind) }
+    target = @locObjects[loc] && @locObjects[loc].find{ |x,t| ![:item, :decor].include?(x.kind) && x.health != 0 }
     if target
       return true unless check_weapon(mob, mob.weapon)
       target = target[0]
@@ -358,6 +431,9 @@ class GameState
     
     if mob == @player
       @scent_map[next_loc] = @turn
+      if objs && !objs.empty?
+        mob << "On the ground: #{objs.map{|x| x[0].info}.join("; ")}"
+      end
     end
     @locObjects[mob_loc].delete(mob)
     place_mob(next_loc, mob)
@@ -396,24 +472,58 @@ class GameState
     else
       @rng.rand(weapon.melee_dam) + shooter.strength
     end
+    damage = [1, damage].max
+    #handle armour
+    if target.armour
+      if target.armour.charge && target.armour.charge > 0
+        neg = @rng.rand(target.armour.dr_charge[0]..target.armour.dr_charge[1])
+        target.armour.add_charge(-1)
+      else
+        neg = @rng.rand(target.armour.dr[0]..target.armour.dr[1])
+      end
+      damage = [0, damage - neg].max
+    end
     weapon.charge-=1 if weapon.charge
-    target.health -= damage
+    target.health = [target.health - damage, 0].max
     if target.health <= 0
-      kill target
       shooter << "You #{killed target} the #{target.name}"
-    else 
+      target << "You are killed by #{shooter.name}"
+      kill target
+      if target.kill_flag
+        act shooter, target.kill_flag
+      end
+      :action
+    elsif damage == 0
+      shooter << "You hit the #{target.name} to no effect!"
+      target << "You are hit by the #{shooter.name} to no effect."
+    else
       shooter << "You #{damage_msg target, damage, target.max_health} the #{target.name}"
+      target << "You are attacked by the #{shooter.name} for #{damage} hp"
     end
   end
   
   def kill(target)
+    return if target == @player
     loc = @objects[target]
     @locObjects[@objects[target]].delete(target)
+    items = target.items
     @objects.delete(target)
     if target.kill_template
-      object = Entity.new(@rng, @config[:objects], @config[:objects][target.kill_template])
+      object = Entity.new(self, @rng, @config[:objects], @config[:objects][target.kill_template])
       @objects[object] = loc
       place_mob(loc, object)
+    elsif !items.empty? && @rng.rand(100) > 50
+      item = items[@rng.rand(items.size)]
+      items.each do |i|
+        next if i == item
+        @objects.delete(i)
+      end
+      place_mob(loc, item)
+    else 
+      items.each do |i|
+        next if i == item
+        @objects.delete(i)
+      end
     end
   end
   

@@ -10,6 +10,7 @@ n: cmd_down_right
 a: cmd_activate
 s: cmd_shoot
 x: cmd_examine
+e: cmd_equip
 '>': cmd_lift_up
 '<': cmd_lift_down
 o: cmd_open

@@ -2,8 +2,8 @@ require_relative "Entity"
 
 class Player < Entity
   attr_reader :old_msgs
-  def initialize(rng, templates, template)
-    super(rng, templates, template)
+  def initialize(game, rng, templates, template)
+    super(game, rng, templates, template)
     @old_msgs = []
     @last_target = self
   end
@@ -33,7 +33,7 @@ class Player < Entity
   end
   
   def more_messages?
-    !@pending_messages[0].nil?
+    @pending_messages.size
   end
   
   def last_msg

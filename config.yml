@@ -1,4 +1,25 @@
 ---
+:ending:
+  :core_breach: 
+    - "You breached the reactor core, causing a"
+    - "catastrophic containment failure, and the "
+    - "complete destruction of the vessel"
+  :shield_failure:
+    - "You brought shield power to critical levels"
+    - "while at warp speeds. The ship, no longer able"
+    - "to cope with the stresses, lost hull integrity"
+    - "and disintegrated."
+  :capture:
+    - "Your efforts to disrupt the rebels' flight allowed"
+    - "friendly forces to intercept and recapture the"
+    - "vessel."
+  :leader_dead:
+    - "After seeing you the rebels' commander, the survivors"
+    - "of your massacre surrender. You are able to regain "
+    - "control of the ship, and bring it home safely"
+  :killed:
+    - "In your efforts to recapture the ship, your were"
+    - "killed by rebel soldiers."
 :mapSymbols:
   :blank: [' ', 0]
   :floor: ['.', 0]
@@ -21,17 +42,22 @@
     :objects:  
       - [1, :crewer]
       - [1, :crewer]
-      - [1, :crewer]
-      - [1, :crewer]
+      - [1, :soldier]
+      - [1, :soldier]
+      - [0.2, :soldier]
+      - [0.2, :soldier]
+      - [1, :marine]
+      - [0.5, :marine]
+      - [0.5, :marine]
   Quarters:
-    :count: 0.8
+    :count: 0.9
     :levels: [0, 7, 1, 6]
     :prereqs:
       :small: true
     :objects:
       - [0.4, :charger]
       - [1, :terminal]
-      - [0.1, :crewer]
+      - [0.01, :crewer]
   Mess Hall:
     :count: 8
     :levels: [0, 7, 1, 6, 2, 5]
@@ -41,17 +67,25 @@
     :objects:  
       - [0.5, :crewer]
       - [0.5, :crewer]
-      - [0.5, :crewer]
   Recreation:
     :count: 4
     :levels: [0, 7, 1, 6]
     :crawl: true
     :objects:  
       - [0.5, :crewer]
-      - [0.5, :crewer]
-      - [0.5, :crewer]
     :prereqs:
       :medium: true
+  Barracks:
+    :count: 0.1
+    :levels: [3, 4, 5]
+    :crawl: true
+    :prereqs:
+      :medium: true
+    :objects:  
+      - [0.5, :soldier]
+      - [0.5, :marine]
+      - [0.5, :soldier]
+      - [0.5, :marine]
   Infirmary:
     :count: 1
     :levels: [3, 4, 5]
@@ -60,7 +94,8 @@
       :medium: true
     :objects:  
       - [0.5, :crewer]
-      - [0.5, :crewer]
+      - [0.2, :soldier]
+      - [0.01, :marine]
   Briefing Room:
     :count: 10
     :levels: [2, 3, 4, 5, 6]
@@ -69,43 +104,64 @@
       :medium: true
     :objects:  
       - [0.5, :crewer]
-      - [0.5, :crewer]
-      - [0.5, :crewer]
-      - [0.5, :crewer]
+      - [0.5, :soldier]
+      - [0.4, :soldier]
+      - [0.2, :soldier]
+      - [0.1, :marine]
+      - [0.1, :marine]
   Brig:
     :count: 1
     :levels: [4, 5]
     :objects:  
       - [0.5, :crewer]
-      - [0.5, :crewer]
-      - [0.5, :crewer]
+      - [0.7, :soldier]
+      - [0.7, :soldier]
+      - [0.1, :marine]
   Reactor:
     :count: 1
     :prereqs:
       :end: true
     :levels: [3, 5]  
     :objects:  
+      - [1, :reactor_core]
       - [0.5, :crewer]
+      - [0.7, :soldier]
+      - [0.2, :soldier]
+      - [0.2, :soldier]
+      - [0.01, :marine]
+      - [0.01, :marine]
+  Science Lab:
+    :count: 0.2
+    :levels: [2, 3, 4, 5]
+    :crawl: true
+    :objects:  
       - [0.5, :crewer]
-      - [0.5, :crewer]
+      - [0.2, :soldier]
+      - [0.5, :marine]
+      - [0.5, :energy_armour]
+      - [0.1, :disruptor_rifle]
   Lift Support:
     :count: 1
     :levels: [2, 3, 4, 5]
     :crawl: true
     :objects:  
       - [0.5, :crewer]
-      - [0.5, :crewer]
-      - [0.5, :crewer]
+      - [0.2, :soldier]
+      - [0.01, :marine]
     :prereqs:
       :medium: true
   Maintenance:
-    :count: 0.1
+    :count: 0.05
     :levels: [0, 1, 2, 3, 4, 5, 6, 7]
     :crawl: true
     :objects:  
-      - [0.5, :crewer]
-      - [0.5, :crewer]
+      - [1, [:warp_drive_relay, :shield_emitter]]
       - [0.1, :crewer]
+      - [0.001, :soldier]
+      - [0.0001, :marine]
+      - [0.2, :container]
+      - [0.5, :container]
+      - [0.5, :container]
   Propulsion Control:
     :count: 1
     :levels: [2, 3, 4, 5]
@@ -113,7 +169,8 @@
     :objects:  
       - [0.5, :crewer]
       - [0.5, :crewer]
-      - [0.5, :crewer]
+      - [0.2, :soldier]
+      - [0.01, :marine]
   Weapons Control:
     :count: 1
     :levels: [2, 3, 4, 5]
@@ -122,6 +179,8 @@
       - [0.5, :crewer]
       - [0.5, :crewer]
       - [0.5, :crewer]
+      - [0.2, :soldier]
+      - [0.01, :marine]
   Shield Control:
     :count: 1
     :levels: [2, 3, 4, 5]
@@ -130,12 +189,14 @@
       - [0.5, :crewer]
       - [0.5, :crewer]
       - [0.5, :crewer]
+      - [0.5, :soldier]
+      - [0.01, :marine]
   Transporter:
     :count: 2
     :objects:  
       - [0.5, :crewer]
-      - [0.5, :crewer]
-      - [0.5, :crewer]
+      - [0.5, :soldier]
+      - [0.01, :marine]
     :prereqs:
       :end: true
     :levels: [2, 3, 4, 5, 6]
@@ -146,6 +207,10 @@
     :objects:  
       - [0.5, :crewer]
       - [0.5, :crewer]
+      - [0.5, :soldier]
+      - [0.5, :plasma_rifle]
+      - [0.5, :plasma_rifle]
+      - [0.5, :recharger_rifle]
     :prereqs:
       :medium: true
   Docking Bay Access:
@@ -153,22 +218,21 @@
     :objects:  
       - [0.5, :crewer]
       - [0.5, :crewer]
-      - [0.5, :crewer]
+      - [0.5, :soldier]
+      - [0.5, :soldier]
     :prereqs:
       :end: true
     :levels: [2, 3, 4, 5, 6]
   Storage:
-    :count: 0.3
+    :count: 0.1
     :objects:  
       - [0.8, :crewer]
       - [0.5, :crewer]
       - [0.1, :crewer]
-      - [0.1, :crewer]
-      - [1, :container]
-      - [1, :container]
+      - [0.9, :container]
+      - [0.9, :container]
       - [0.2, :container]
       - [0.2, :container]
-      - [0.5, :container]
       - [0.5, :container]
       - [0.5, :container]
     :levels: [0, 1, 2, 3, 4, 5, 6, 7]
@@ -184,17 +248,67 @@ templates:
     :symbol: ['/', 1]
     :capabilities: [:weapon]
     :melee_dam: 1
+  armour: &armour
+    :kind: :item
+    :symbol: ['}', 1]
+    :capabilities: [:armour]
   creature: &creature
     :kind: :creature
     :weapon: [:plasma_pistol]
     :mobile: true
     :strength: 3
+  player: &player  
+    <<: *creature
 :objects:
+  :combat_armour:
+    :name: "Infantry Armour"
+    :description: "Lightweight armour. Known to occassionally turn a bolt."
+    :dr: [2, 4]
+    <<: *armour
+  :energy_armour:
+    :name: "Energy Armour"
+    :description: "Prototype energy shield armour."
+    :dr: [2, 2]
+    :dr_charge: [6, 8]
+    :charge: 5
+    <<: *armour
+  :battle_armour:
+    :name: "Battle Armour"
+    :description: "Heavy infantry armour."
+    :dr: [3, 5]
+    <<: *armour
+  :crew_uniform:
+    :name: "Crew Uniform"
+    :description: "Standard issue crew uniform"
+    :dr: [0, 1]
+    <<: *armour
   :wreckage:
     :symbol: ['%', 5]
     :name: "Wreckage"
     :kind: :decor
     :description: "Unidentifiable wreckage"
+  :warp_drive_relay:
+    :symbol: ['*', 3]
+    :name: "Warp Drive Relay"
+    :description: "A portion of the warp drive power relay."
+    :capabilities: [:against_wall, :warp_damage]
+    :kill_flag: :warp_damage
+    <<: *construct
+  :shield_emitter:
+    :symbol: ['*', 3]
+    :name: "Shield Emitter"
+    :description: "A shield emitter."
+    :capabilities: [:against_wall]
+    :kill_flag: :shield_damage
+    <<: *construct
+  :reactor_core:
+    :symbol: ['*', 3]
+    :name: "Reactor Core"
+    :description: "The reactor core itself. It is heavily shielded."
+    :capabilities: [:away_wall]
+    :kill_flag: :destroy_ship
+    :health: [100, 100]
+    <<: *construct
   :container:
     :symbol: ['H', 3]
     :name: "Container"
@@ -205,8 +319,9 @@ templates:
     :symbol: ['@', 1]
     :name: "You"
     :description: "The player" 
-    <<: *creature
-    :weapon: [:plasma_rifle]
+    <<: *player
+    :weapon: [:plasma_pistol]
+    :armour: [:combat_armour]
   :terminal:
     :name: "Terminal"
     :description: "A standard computer terminal"
@@ -225,20 +340,86 @@ templates:
     :health: [3, 4]
     :symbol: ['c', 4]
     :capabilities: [:ai]
+    :fire_range: 10
+    :stop_msg: "Crewer: '?? You there! Stop!'"
+    :armour: [:crew_uniform]
+    <<: *creature
+  :soldier:
+    :name: "Soldier"
+    :description: "A determined rebel soldier"
+    :health: [5, 7]
+    :symbol: ['s', 4]
+    :capabilities: [:ai]
+    :fire_range: 15
+    :stop_msg: "Soldier: 'Freeze!'"
+    :weapon: [:recharger_carbine, :plasma_pistol]
+    :armour: [:combat_armour]
+    :likes: :hall
+    <<: *creature
+  :marine:
+    :name: "Marine"
+    :description: "A season veteran"
+    :health: [9, 12]
+    :symbol: ['m', 4]
+    :capabilities: [:ai]
+    :fire_range: 20
+    :stop_msg: "Marine: 'Halt!'"
+    :weapon: [:recharger_carbine, :plasma_rifle, :plasma_rifle]
+    :armour: [:combat_armour, :battle_armour, :battle_armour]
+    :likes: :hall
+    <<: *creature
+  :leader:
+    :name: "Rebel Commander"
+    :description: "A veteran of the rebellion"
+    :health: [20, 20]
+    :symbol: ['L', 4]
+    :capabilities: [:ai]
+    :fire_range: 30
+    :stop_msg: "Leader: 'You will fail now!'"
+    :weapon: [:disruptor_rifle]
+    :armour: [:battle_armour]
+    :kill_flag: :leader_dead
+    :likes: :hall
     <<: *creature
   :plasma_pistol:
-    :name: "Plasma Pistol"
+    :name: "Laser Pistol"
     :description: "Standard issue sidearm"
-    :dam: [2, 3]
+    :dam: [1, 3]
     :acc: 0.80
     :acc_drop: 0.02
     :charge: 50
     <<: *weapon
+  :recharger_carbine:
+    :name: "Recharger Carbine"
+    :description: "Light assault rifle. Uses a self-regenerating power source"
+    :dam: [4, 5]
+    :acc: 0.75
+    :acc_drop: 0.02
+    :charge: 10
+    :capabilities: [:weapon, :self_charge, :self_charge]
+    <<: *weapon
   :plasma_rifle:
     :name: "Plasma Rifle"
     :description: "The assault weapon of choice for the modern marine"
-    :dam: [4, 5]
+    :dam: [6, 7]
     :acc: 0.70
     :acc_drop: 0.002
     :charge: 30
+    <<: *weapon
+  :disruptor_rifle:
+    :name: "Disruptor Rifle"
+    :description: "Experiment prototype rifle."
+    :dam: [10, 12]
+    :acc: 0.70
+    :acc_drop: 0.002
+    :charge: 10
+    <<: *weapon
+  :recharger_rifle:
+    :name: "Recharger Rifle"
+    :description: "Heavy assault rifle. Uses a self-regenerating power source"
+    :dam: [7, 9]
+    :acc: 0.75
+    :acc_drop: 0.02
+    :charge: 8
+    :capabilities: [:weapon, :self_charge, :self_charge]
     <<: *weapon

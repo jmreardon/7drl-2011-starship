@@ -31,29 +31,41 @@ module Main
       Ncurses.init_pair(5, Ncurses::COLOR_CYAN, bg);
       colours = true
     end
+    
+    #this is the game loop
+    action_result = :no_action
     #attempt to load saved game
-    @game = load_game() || new_game()
- 
+    beginning_time = Time.now
+    @game = load_game(@config)
     @dsp = Display.new(colours)
     @dsp.window = Ncurses.stdscr
-    
-    action_result = :no_action
     begin
-      if action_result != :no_action
-        @game.process
-      end
-      messages = @dsp.show(@game, @god) 
-      #show multiple lines of messages
-      if messages
-        Ncurses.stdscr.getch
-        action_result = :no_action
-      else 
-        action_result = process_input(Ncurses.stdscr.getch)
-      end
-    end while action_result
+      if !@game || action_result == :game_over
+       @dsp.new_game
+       @game = new_game()
+     end
     
-    File.open("saved_game.dat", "w") do |f|
-      Marshal.dump(@game, f)
+      
+      begin
+        if action_result != :no_action && @game.player.health > 0
+          @game.process
+        end
+        #save_game
+        messages = @dsp.show(@game, @god, beginning_time) 
+        #show multiple lines of messages
+        if messages
+          Ncurses.stdscr.getch
+          action_result = :no_action
+        else 
+          action_result = process_input(Ncurses.stdscr.getch)
+        end
+        beginning_time = Time.now
+      end while action_result && action_result != :game_over
+      @dsp.game_over(@game.game_over, @game.player.health) if @game.game_over
+      Ncurses.clear
+    end while action_result
+    if @game
+      save_game
     end
   rescue Interrupt
     #do nothing
@@ -65,6 +77,13 @@ module Main
 
   private
   
+  def Main.save_game
+    return false unless @game
+    File.open("saved_game.dat", "w") do |f|
+      Marshal.dump(@game, f)
+    end
+  end
+    
   def Main.end_curses
     Ncurses.echo
     Ncurses.nocbreak
@@ -78,6 +97,9 @@ module Main
       return :no_action
     end
     action = @keyBindings[char]
+    if @game.game_over && action == :cmd_esc
+      return :game_over
+    end
     case action
     when nil
       @game.player << "Unbound key #{char}"
@@ -93,19 +115,21 @@ module Main
       when :direction
         dir = get_direction
         if dir
-          @game.act(@game.player, action, :dir => dir)
+          return @game.act(@game.player, action, :dir => dir)
         else 
           return :no_action
         end
       when :target
         target = get_target
         if target
-          @game.act(@game.player, action, :target => target)
+          return @game.act(@game.player, action, :target => target)
         else 
           return :no_action
         end
       when false
         return :no_action
+      else
+        return result
       end
     end
     return :action
@@ -154,15 +178,19 @@ module Main
     return GameState.new(Random.new, @config)
   end
   
-  def Main.load_game
+  def Main.load_game(config)
     return false unless File.exists?("saved_game.dat")
-    File.open("saved_game.dat", "r") do |f|
+    loaded = File.open("saved_game.dat", "r") do |f|
       Marshal.load(f)
     end
+    loaded.config = @config
+    File.delete("saved_game.dat")
+    loaded
   end
 
   def Main.init
     Signal.trap("TERM") do
+      save_game
       end_curses
     end
     @god = false
@@ -185,5 +213,7 @@ module Main
   rescue RuntimeError => e  
     puts e.message
     fail e
+  ensure
+    save_game
   end
 end

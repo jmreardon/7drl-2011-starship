@@ -4,16 +4,17 @@ include Offset
 
 class MapBuilder
   
-  def constructMap(rng, roomTemplates, objectTemplates)
+  def constructMap(game, rng, roomTemplates, objectTemplates)
     @rng = rng
+    @game = game
     @objects = []
     @objectTemplates = objectTemplates
-    maxRoomDepth = 7 + rng.rand(2)
+    maxRoomDepth = 5 + rng.rand(2)
     roomDepth = [0,0,0,0,maxRoomDepth,0,0,0]
     levelLength = [0,0,0,0,120+5*rng.rand(10),0,0,0]
     levelStart = [0,0,0,0-(levelLength[3]/2),0,0,0]
     for i in [3,5,6,7,2,1,0]
-      roomDepth[i] = [3, roomDepth[nextToMiddle i] - 1 - rand(2)].max
+      roomDepth[i] = [3, roomDepth[nextToMiddle i] - 1 - rand(1)].max
       levelLength[i] = [40, levelLength[nextToMiddle i] - 5 * rand(10)].max
       
       minLevelStart = levelStart[nextToMiddle i]
@@ -97,7 +98,8 @@ class MapBuilder
   end
   
   def placeObject(kind, level, candidates)
-    obj = Entity.new(@rng, @objectTemplates, @objectTemplates[kind])
+    the_kind = if kind.kind_of?(Array) then kind[@rng.rand(kind.size)] else kind end
+    obj = Entity.new(@game, @rng, @objectTemplates, @objectTemplates[the_kind])
     locs = candidates.to_a
     if obj.capabilities.include?(:against_wall)
       locs = locs.select{ |x,t| walls_at(level, x) > 2 }
@@ -207,7 +209,7 @@ class MapBuilder
     y2 = section[1][1]
     
     bottom = y1 > @levelWidth/2
-    if x2 - x1 > 50
+    if x2 - x1 > 25
       midpoint = @rng.rand(10)+(x1+x2)/2-5
       carveCrawlspace(level, midpoint, y1, y2)
       carveRooms(level, [[x1,y1], [midpoint-2, y2]])

@@ -6,22 +6,24 @@ class Entity
               :symbol, 
               :mobile, 
               :kind, 
-              :weapon, 
               :capabilities, 
               :max_health,
               :max_charge
   attr_accessor :health, 
-                :charge
+                :charge,
+                :weapon, 
+                :armour
   attr_accessor :last_target
   
-  def initialize(rng, templates, template)
+  def initialize(game, rng, templates, template)
     @template = template
     @description = template[:description] || (fail "No description for this entity: #{template}")
     @name = template[:name] || (fail "No name for this entity: #{template}")
     @symbol = template[:symbol] || (fail "No symbol for this entity: #{template}")
     @mobile = template[:mobile] || false
     @kind = template[:kind] || (fail "No kind for this entity: #{template}")
-    @weapon = select_weapon(rng, template[:weapon], templates)
+    @weapon = select_item(game, rng, template[:weapon], templates)
+    @armour = select_item(game, rng, template[:armour], templates)
     @health = select_health(rng, template[:health])
     @max_health = @health
     @charge = template[:charge]
@@ -29,6 +31,9 @@ class Entity
     @capabilities = template[:capabilities] || []
     @pending_messages = []
     @props = Hash.new
+    for i in items
+      game.add_item i
+    end
   end
   
   def add_charge(add)
@@ -40,13 +45,14 @@ class Entity
   def items
     items = []
     items << weapon unless weapon.nil?
+    items << armour unless armour.nil?
     items
   end
   
   def method_missing(id, *args)
     raise NoMethodError if args.size > 1
     if args.size == 1 && id[-1] == "="
-      @props[id] = args[0]
+      @props[id.to_s.chop.to_sym] = args[0]
     elsif args.size == 0
       @props[id] || @template[id]
     end
@@ -60,9 +66,12 @@ class Entity
     case c
     when :weapon
       "[#{self.dam.join("-")}]"
+    when :armour
+      "[#{self.dr.join("-")}" + (if self.dr_charge then "/#{self.dr_charge.join("-")}]" else "]" end)
     else
       nil
     end
+  rescue NoMethodError
   end
   
   def read_messages(game)
@@ -95,10 +104,10 @@ class Entity
     if range.nil? then 10 else rng.rand(range[0]..range[1]) end
   end
   
-  def select_weapon(rng, weapon_options, templates)
-    return nil if weapon_options.nil?
-    weapon = weapon_options[rng.rand(weapon_options.size)]
-    fail "Cannot identify weapon: #{weapon}" if templates[weapon].nil?
-    return Entity.new(rng, templates, templates[weapon])
+  def select_item(game, rng, options, templates)
+    return nil if options.nil?
+    item = options[rng.rand(options.size)]
+    fail "Cannot identify item: #{weapon}" if templates[item].nil?
+    return Entity.new(game, rng, templates, templates[item])
   end
 end
