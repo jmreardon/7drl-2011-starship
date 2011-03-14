@@ -15,7 +15,6 @@ e: cmd_equip
 '<': cmd_lift_down
 o: cmd_open
 c: cmd_close
-G: cmd_god
 Q: quit
 q: cmd_esc
 13: cmd_enter

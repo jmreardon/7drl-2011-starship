@@ -183,11 +183,11 @@ class Display
 
     @window.mvaddstr(map_height-3, side_start, sprintf("               Turn: %5d", game.turn))
     @window.mvaddstr(map_height-2, side_start, sprintf(" Distance to border:  %2.1fly", (game.distance/1000)))
-    @window.mvaddstr(map_height-1, side_start, sprintf("Distance of pursuit:   %2.1fly", -((game.capture_distance-game.distance)/1000)))
+    @window.mvaddstr(map_height-1, side_start, sprintf("Distance of pursuit:   %2.1fly", game.capture_distance/1000))
     
-    @window.mvaddstr(19, side_start, "Objects #{game.object_count}")
+    #@window.mvaddstr(19, side_start, "Objects #{game.object_count}")
     end_time = Time.now
-    @window.mvaddstr(20, side_start, "Time #{((end_time - beginning_time)*1000).round} milliseconds")
+    #@window.mvaddstr(20, side_start, "Time #{((end_time - beginning_time)*1000).round} milliseconds")
     return player.more_messages? > 0
   ensure
     @mark = nil

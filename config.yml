@@ -40,6 +40,7 @@
     :prereqs:
       :bridge: true
     :objects:  
+      - [1, :leader]
       - [1, :crewer]
       - [1, :crewer]
       - [1, :soldier]
@@ -82,6 +83,7 @@
     :prereqs:
       :medium: true
     :objects:  
+      - [0.4, :charger]
       - [0.5, :soldier]
       - [0.5, :marine]
       - [0.5, :soldier]
@@ -138,7 +140,7 @@
       - [0.5, :crewer]
       - [0.2, :soldier]
       - [0.5, :marine]
-      - [0.5, :energy_armour]
+      - [0.3, :energy_armour]
       - [0.1, :disruptor_rifle]
   Lift Support:
     :count: 1
@@ -201,7 +203,7 @@
       :end: true
     :levels: [2, 3, 4, 5, 6]
   Armoury:
-    :count: 6
+    :count: 8
     :levels: [2, 3, 4, 5, 6]
     :crawl: true
     :objects:  
@@ -226,6 +228,7 @@
   Storage:
     :count: 0.1
     :objects:  
+      - [0.2, :charger]
       - [0.8, :crewer]
       - [0.5, :crewer]
       - [0.1, :crewer]
@@ -320,7 +323,7 @@ templates:
     :name: "You"
     :description: "The player" 
     <<: *player
-    :weapon: [:plasma_pistol]
+    :weapon: [:recharger_carbine]
     :armour: [:combat_armour]
   :terminal:
     :name: "Terminal"

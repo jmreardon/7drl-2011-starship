@@ -66,7 +66,7 @@ class GameState
     @distance -= @warp_status * 10
     @capture_distance -= 7
     @turn+=1
-    if @distance < @capture_distance
+    if @capture_distance < 0
       @player << "Friendly vessels have intercepted the ship"
       @game_over = @config[:ending][:capture]
     end
@@ -483,7 +483,7 @@ class GameState
       end
       damage = [0, damage - neg].max
     end
-    weapon.charge-=1 if weapon.charge
+    weapon.charge-=1 if weapon.charge && weapon.charge > 0
     target.health = [target.health - damage, 0].max
     if target.health <= 0
       shooter << "You #{killed target} the #{target.name}"

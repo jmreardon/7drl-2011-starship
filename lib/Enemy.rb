@@ -78,7 +78,7 @@ module Enemy
   
   def Enemy.follow_fov(game, rng, mob, loc, p_loc)
     target_loc = fov_target(loc, game, p_loc)
-    game.move(mob, *diff(*loc, *target_loc))
+    game.move(mob, *diff(*loc, *target_loc)) if target_loc
   end
   
   def Enemy.follow_scent(game, rng, mob, loc)
