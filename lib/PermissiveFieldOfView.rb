@@ -1,3 +1,39 @@
+# Copyright 2011 Justin Reardon
+#
+# This file is part of 'Storming the Ship'.
+# 
+# Storming the Ship is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+# 
+# Storming the Ship is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with Storming the Ship.  If not, see <http://www.gnu.org/licenses/>.
+
+
+# Based on the original Python version, by:
+# Author:         Aaron MacDonald
+# Date:           June 14, 2007
+# 
+# Description:    An implementation of the precise permissive field
+#                 of view algorithm for use in tile-based games.
+#                 Based on the algorithm presented at
+#                 http://roguebasin.roguelikedevelopment.org/
+#                   index.php?title=
+#                   Precise_Permissive_Field_of_View.
+# 
+# You are free to use or modify this code as long as this notice is
+# included.
+# This code is released without warranty.
+
+# Copied from
+# http://roguebasin.roguelikedevelopment.org/index.php?title=Permissive_Field_of_View_in_Python
+
 # To use the algorithm, create a Map class or somesuch and provide two methods:
 #
 # blocked?(x, y) returns true if the tile at (x, y) blocks view of tiles beyond it (e.g. walls)
