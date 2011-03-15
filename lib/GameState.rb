@@ -81,7 +81,7 @@ class GameState
       o.process self, @rng
     end
     @distance -= @warp_status * 10
-    @capture_distance -= 7
+    @capture_distance = @capture_distance - 7 + @warp_status * 10
     @turn+=1
     if @capture_distance < 0
       @player << "Friendly vessels have intercepted the ship"
