@@ -1,12 +1,10 @@
 GEM
   remote: http://rubygems.org/
   specs:
-    algorithms (0.3.0)
     ncursesw (1.2.4.3)
 
 PLATFORMS
   ruby
 
 DEPENDENCIES
-  algorithms
   ncursesw
