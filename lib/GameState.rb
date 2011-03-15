@@ -209,7 +209,8 @@ class GameState
         mob << "Seeing their commander die, the rebels surrender"
       @game_over = @config[:ending][:leader_dead]
     else 
-      mob << "I don't know about action #{action}"
+      #mob << "I don't know about action #{action}"
+      :no_action
     end
   end
   

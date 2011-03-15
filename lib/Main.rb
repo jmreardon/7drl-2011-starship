@@ -102,7 +102,7 @@ module Main
     end
     case action
     when nil
-      @game.player << "Unbound key #{char}"
+      #@game.player << "Unbound key #{char}"
       return :no_action
     when :quit
       return false
