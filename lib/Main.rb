@@ -16,6 +16,7 @@
 # along with Storming the Ship.  If not, see <http://www.gnu.org/licenses/>.
 
 require "yaml"
+require "random"
 require "ncursesw"
 require_relative "GameState"
 require_relative "Display"
