@@ -1,1 +1,24 @@
 Project for the 2011 7DRL Contest
+
+RUNNING
+
+execute "bin/Starship-7drl" from the root of this project.
+
+INSTALLING
+
+This program requires Ruby 1.9, and the ruby packages ncursesw and backports
+
+To install these packages, use:
+
+gem install ncursesw
+gem install backports
+
+ncursesw requires the ncurses header files to build, so you will also need the
+ncurses-dev package for your operating system. Depending on where your Ruby
+intallation is, the gem commands may need to be run as root, gem will complain
+if so.
+
+Some package managers may suffix ruby related commands with a version (eg. gem1.9).
+If your system does this, it will be necesary to modify bin/Starship-7drl to use
+the correct name for the ruby executable.
+
