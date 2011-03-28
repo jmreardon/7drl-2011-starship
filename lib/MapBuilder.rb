@@ -94,7 +94,7 @@ class MapBuilder
         templates = templatesLevel.select{|kname,spec| specs_match? data, spec}
         fail "no templates for room #{loc}, #{data}" if templates.empty?
         odds = templates.map{|t| [t[1][:count], t]}.inject([[0, nil]]){ |memo,obj| memo.push([memo[-1][0]+obj[0], obj[1]])}
-        value = @rng.rand(odds.last.first)
+        value = @rng.rand(odds.last.first+0.00001)
         target = odds.find{ |v,t| value < v}
         processRoom l, loc, data, *target[1]
       end
